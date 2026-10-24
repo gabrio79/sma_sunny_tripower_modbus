@@ -21,3 +21,7 @@ venv/
 # IDE
 .vscode/
 .idea/
+
+# Miei file personali
+*sma_inverter*.yaml
+

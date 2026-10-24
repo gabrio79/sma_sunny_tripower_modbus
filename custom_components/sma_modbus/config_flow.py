@@ -35,6 +35,7 @@ from .const import (
     STRINGS_LABEL_CD,
     STRINGS_LABEL_OPTIONS,
 )
+from .coordinator import async_read_holding_registers
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,24 +50,13 @@ async def validate_connection(
         if not connected:
             return False, "cannot_connect"
 
-        # Attempt to read status register (30201)
-        try:
-            response = await client.read_holding_registers(
-                address=BLOCK_SLOW_STATUS_START,
-                count=BLOCK_SLOW_STATUS_COUNT,
-                slave=slave_id,
-            )
-        except TypeError:
-            # Fallback for older pymodbus versions
-            response = await client.read_holding_registers(
-                address=BLOCK_SLOW_STATUS_START,
-                count=BLOCK_SLOW_STATUS_COUNT,
-                unit=slave_id,
-            )
-
-        if response is None or response.isError():
-            return False, "invalid_response"
-
+        # Attempt to read status register (30201) using universal pymodbus helper
+        await async_read_holding_registers(
+            client=client,
+            address=BLOCK_SLOW_STATUS_START,
+            count=BLOCK_SLOW_STATUS_COUNT,
+            slave_id=slave_id,
+        )
         return True, None
 
     except (asyncio.TimeoutError, OSError):

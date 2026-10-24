@@ -67,6 +67,43 @@ def decode_int64(registers: list[int]) -> int:
     return struct.unpack(">q", raw)[0]
 
 
+async def async_read_holding_registers(
+    client: AsyncModbusTcpClient, address: int, count: int, slave_id: int
+) -> list[int]:
+    """Read holding registers handling pymodbus version compatibility (device_id, slave, unit)."""
+    response = None
+    for kwarg in ("device_id", "slave", "unit"):
+        try:
+            response = await client.read_holding_registers(
+                address=address, count=count, **{kwarg: slave_id}
+            )
+            break
+        except TypeError as err:
+            if "unexpected keyword argument" in str(err):
+                continue
+            raise
+
+    if response is None:
+        try:
+            response = await client.read_holding_registers(address=address, count=count)
+        except Exception as err:
+            raise ModbusException(
+                f"Modbus call failed for address {address}: {err}"
+            ) from err
+
+    if response is None or response.isError():
+        raise ModbusException(
+            f"Modbus error reading {count} registers from address {address}: {response}"
+        )
+
+    if len(response.registers) < count:
+        raise ModbusException(
+            f"Incomplete read from address {address}: expected {count}, got {len(response.registers)}"
+        )
+
+    return response.registers
+
+
 class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Coordinator to manage polling SMA Sunny Tripower inverter via Modbus TCP."""
 
@@ -119,28 +156,10 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _async_read_chunk(
         self, client: AsyncModbusTcpClient, address: int, count: int
     ) -> list[int]:
-        """Read holding registers handling pymodbus version parameter compatibility."""
-        try:
-            response = await client.read_holding_registers(
-                address=address, count=count, slave=self.slave_id
-            )
-        except TypeError:
-            # Fallback for older pymodbus versions where parameter was 'unit'
-            response = await client.read_holding_registers(
-                address=address, count=count, unit=self.slave_id
-            )
-
-        if response is None or response.isError():
-            raise ModbusException(
-                f"Modbus error reading {count} registers from address {address}: {response}"
-            )
-
-        if len(response.registers) < count:
-            raise ModbusException(
-                f"Incomplete read from address {address}: expected {count}, got {len(response.registers)}"
-            )
-
-        return response.registers
+        """Read holding registers delegating to universal helper."""
+        return await async_read_holding_registers(
+            client=client, address=address, count=count, slave_id=self.slave_id
+        )
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch all required registers using optimized chunking."""
