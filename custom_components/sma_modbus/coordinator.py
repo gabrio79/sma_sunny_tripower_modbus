@@ -80,20 +80,49 @@ async def _async_try_read(
     for kwarg in ("device_id", "slave", "unit"):
         try:
             resp = await method(address=address, count=count, **{kwarg: slave_id})
-            if resp is not None and not resp.isError() and len(resp.registers) >= count:
-                return resp.registers
+            if resp is not None:
+                if resp.isError():
+                    _LOGGER.warning(
+                        "SMA Inverter %s returned Modbus exception on address %s (%s=%s): %s",
+                        client.host,
+                        address,
+                        kwarg,
+                        slave_id,
+                        resp,
+                    )
+                    return None
+                if hasattr(resp, "registers") and len(resp.registers) >= count:
+                    return resp.registers
         except TypeError as err:
             if "unexpected keyword argument" in str(err):
                 continue
-        except Exception:  # pylint: disable=broad-except
-            pass
+            _LOGGER.warning(
+                "TypeError reading address %s on %s (%s=%s): %s",
+                address,
+                client.host,
+                kwarg,
+                slave_id,
+                err,
+            )
+        except (asyncio.TimeoutError, OSError):
+            raise
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.warning(
+                "Communication error reading address %s on %s (%s=%s): %s",
+                address,
+                client.host,
+                kwarg,
+                slave_id,
+                err,
+            )
+            raise
     return None
 
 
 async def async_read_holding_registers(
     client: AsyncModbusTcpClient, address: int, count: int, slave_id: int
 ) -> list[int]:
-    """Read registers trying holding (FC03) and input (FC04), and offsets if needed."""
+    """Read registers using holding (FC03), with fallback to input (FC04)."""
     # 1. Try FC03 (read_holding_registers) at address
     regs = await _async_try_read(
         client, client.read_holding_registers, address, count, slave_id
@@ -107,21 +136,6 @@ async def async_read_holding_registers(
     )
     if regs is not None:
         return regs
-
-    # 3. Try FC03 with offset -1 (if device is 1-based)
-    if address > 0:
-        regs = await _async_try_read(
-            client, client.read_holding_registers, address - 1, count, slave_id
-        )
-        if regs is not None:
-            return regs
-
-        # 4. Try FC04 with offset -1
-        regs = await _async_try_read(
-            client, client.read_input_registers, address - 1, count, slave_id
-        )
-        if regs is not None:
-            return regs
 
     raise ModbusException(
         f"Unable to read {count} registers from address {address} (slave {slave_id}) with FC03 or FC04"
@@ -158,6 +172,7 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._last_slow_update: float = 0.0
         self._cached_slow_data: dict[str, Any] = {}
         self._connection_lost_logged: bool = False
+        self._first_data_logged: bool = False
 
     async def _async_ensure_connected(self) -> AsyncModbusTcpClient:
         """Ensure client exists and is connected."""
@@ -171,6 +186,7 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if not self._client.connected:
             connected = await self._client.connect()
             if not connected:
+                self._client = None
                 raise ModbusException(
                     f"TCP handshake failed with {self.host}:{self.port}"
                 )
@@ -194,6 +210,8 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 regs,
             )
             return regs
+        except (asyncio.TimeoutError, OSError):
+            raise
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.warning(
                 "SMA Inverter %s:%s - Failed reading %s registers from address %s: %s",
@@ -212,6 +230,7 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 client = await self._async_ensure_connected()
                 data: dict[str, Any] = {}
                 now = time.monotonic()
+                success_count = 0
 
                 # 1. SLOW CYCLE (every 60s or on startup)
                 need_slow_read = (
@@ -225,6 +244,7 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         client, REG_STATUS, COUNT_STATUS
                     )
                     if status_regs is not None:
+                        success_count += 1
                         raw_status = decode_int32(status_regs)
                         self._cached_slow_data[KEY_STATUS_CODE] = raw_status
                         self._cached_slow_data[KEY_STATUS] = STATUS_CODE_MAP.get(
@@ -236,6 +256,7 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         client, REG_TOTAL_YIELD, COUNT_TOTAL_YIELD
                     )
                     if total_yield_regs is not None:
+                        success_count += 1
                         raw_total = decode_uint64(total_yield_regs)
                         if raw_total in (0xFFFFFFFFFFFFFFFF, 0x8000000000000000):
                             self._cached_slow_data[KEY_TOTAL_YIELD] = None
@@ -249,6 +270,7 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         client, REG_DAILY_YIELD, COUNT_DAILY_YIELD
                     )
                     if daily_yield_regs is not None:
+                        success_count += 1
                         raw_daily = decode_uint64(daily_yield_regs)
                         if raw_daily in (0xFFFFFFFFFFFFFFFF, 0x8000000000000000):
                             self._cached_slow_data[KEY_DAILY_YIELD] = None
@@ -262,6 +284,7 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         client, REG_TEMPERATURE, COUNT_TEMPERATURE
                     )
                     if temp_regs is not None:
+                        success_count += 1
                         raw_temp = decode_int32(temp_regs)
                         if raw_temp in (SMA_S32_NAN, SMA_S32_MAX):
                             self._cached_slow_data[KEY_TEMPERATURE] = None
@@ -271,7 +294,8 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                                 scaled_temp if scaled_temp > -100.0 else None
                             )
 
-                    self._last_slow_update = now
+                    if success_count > 0:
+                        self._last_slow_update = now
 
                 # 2. FAST CYCLE (every 5s)
                 # PV Power 1 (30773, count 2, S32)
@@ -279,6 +303,7 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     client, REG_PV_POWER_1, COUNT_PV_POWER_1
                 )
                 if pv1_regs is not None:
+                    success_count += 1
                     raw_pv1 = decode_int32(pv1_regs)
                     data[KEY_PV_POWER_1] = (
                         0 if raw_pv1 in (SMA_S32_NAN, SMA_S32_MAX) or raw_pv1 < 0 else raw_pv1
@@ -291,6 +316,7 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     client, REG_GRID_POWER, COUNT_GRID_POWER
                 )
                 if grid_regs is not None:
+                    success_count += 1
                     raw_grid = decode_int32(grid_regs)
                     data[KEY_GRID_POWER] = (
                         0 if raw_grid in (SMA_S32_NAN, SMA_S32_MAX) or raw_grid < 0 else raw_grid
@@ -303,6 +329,7 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     client, REG_PV_POWER_2, COUNT_PV_POWER_2
                 )
                 if pv2_regs is not None:
+                    success_count += 1
                     raw_pv2 = decode_int32(pv2_regs)
                     data[KEY_PV_POWER_2] = (
                         0 if raw_pv2 in (SMA_S32_NAN, SMA_S32_MAX) or raw_pv2 < 0 else raw_pv2
@@ -310,31 +337,45 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 else:
                     data[KEY_PV_POWER_2] = 0
 
+                # If no registers could be read at all, force socket cleanup
+                if success_count == 0 and not need_slow_read and not self._cached_slow_data:
+                    if self._client is not None:
+                        try:
+                            self._client.close()
+                        except Exception:
+                            pass
+                        self._client = None
+                    raise UpdateFailed(
+                        f"Nessun dato ricevuto dall'inverter SMA ({self.host}:{self.port}, slave {self.slave_id})"
+                    )
+
                 # Merge cached slow data into payload
                 data.update(self._cached_slow_data)
 
+                # Log first successful read as visible notice in logs
+                if not self._first_data_logged and success_count > 0:
+                    _LOGGER.warning(
+                        "SMA Inverter %s connesso! Telemetria: Rete=%s W, FV1=%s W, FV2=%s W, Stato=%s, Resa Oggi=%s kWh, Totale=%s kWh, Temp=%s °C",
+                        self.host,
+                        data.get(KEY_GRID_POWER),
+                        data.get(KEY_PV_POWER_1),
+                        data.get(KEY_PV_POWER_2),
+                        data.get(KEY_STATUS),
+                        data.get(KEY_DAILY_YIELD),
+                        data.get(KEY_TOTAL_YIELD),
+                        data.get(KEY_TEMPERATURE),
+                    )
+                    self._first_data_logged = True
+
                 # Reset communication lost warning flag upon success
                 if self._connection_lost_logged:
-                    _LOGGER.info(
-                        "Communication re-established with SMA Inverter at %s:%s (slave %s)",
+                    _LOGGER.warning(
+                        "Comunicazione ripristinata con l'inverter SMA %s:%s (slave %s)",
                         self.host,
                         self.port,
                         self.slave_id,
                     )
                     self._connection_lost_logged = False
-
-                _LOGGER.info(
-                    "SMA Inverter %s live data: Grid=%s W, PV1=%s W, PV2=%s W, Status=%s (code %s), Total=%s kWh, Daily=%s kWh, Temp=%s °C",
-                    self.host,
-                    data.get(KEY_GRID_POWER),
-                    data.get(KEY_PV_POWER_1),
-                    data.get(KEY_PV_POWER_2),
-                    data.get(KEY_STATUS),
-                    data.get(KEY_STATUS_CODE),
-                    data.get(KEY_TOTAL_YIELD),
-                    data.get(KEY_DAILY_YIELD),
-                    data.get(KEY_TEMPERATURE),
-                )
 
                 return data
 
@@ -344,26 +385,19 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         self._client.close()
                     except Exception:  # pylint: disable=broad-except
                         pass
+                    self._client = None
 
                 if not self._connection_lost_logged:
                     _LOGGER.warning(
-                        "Inverter unreachable at %s:%s (slave %s). "
-                        "The device may be in night standby mode: %s",
+                        "Inverter irraggiungibile all'indirizzo %s:%s (slave %s): %s",
                         self.host,
                         self.port,
                         self.slave_id,
                         err,
                     )
                     self._connection_lost_logged = True
-                else:
-                    _LOGGER.debug(
-                        "Still unable to reach SMA Inverter at %s:%s: %s",
-                        self.host,
-                        self.port,
-                        err,
-                    )
 
-                raise UpdateFailed(f"Inverter communication error: {err}") from err
+                raise UpdateFailed(f"Errore comunicazione inverter SMA: {err}") from err
 
     async def async_close(self) -> None:
         """Close modbus client connection gracefully."""
