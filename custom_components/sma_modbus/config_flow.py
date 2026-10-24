@@ -13,6 +13,11 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 
 from .const import (
     BLOCK_SLOW_STATUS_COUNT,
@@ -119,7 +124,13 @@ class SmaModbusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
                 vol.Optional(
                     CONF_STRINGS_LABEL, default=DEFAULT_STRINGS_LABEL
-                ): vol.In(STRINGS_LABEL_OPTIONS),
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=STRINGS_LABEL_OPTIONS,
+                        translation_key="strings_label",
+                        mode=SelectSelectorMode.DROPDOWN,
+                    )
+                ),
             }
         )
 
@@ -178,7 +189,13 @@ class SmaModbusOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional(CONF_SLAVE_ID, default=current_slave): cv.positive_int,
                 vol.Optional(
                     CONF_STRINGS_LABEL, default=current_label
-                ): vol.In(STRINGS_LABEL_OPTIONS),
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=STRINGS_LABEL_OPTIONS,
+                        translation_key="strings_label",
+                        mode=SelectSelectorMode.DROPDOWN,
+                    )
+                ),
                 vol.Optional(
                     CONF_SCAN_INTERVAL_FAST, default=current_fast
                 ): cv.positive_int,
