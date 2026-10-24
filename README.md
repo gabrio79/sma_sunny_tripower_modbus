@@ -1,5 +1,9 @@
 # SMA Sunny Tripower Modbus - Custom Component per Home Assistant
 
+<p align="center">
+  <img src="images/banner.jpg" alt="SMA Sunny Tripower Home Assistant Modbus Integration" width="100%">
+</p>
+
 Integrazione personalizzata (HACS compliant) per **Home Assistant** per monitorare inverter fotovoltaici **SMA Sunny Tripower** tramite **Modbus TCP** asincrono (`pymodbus`).
 
 Questa integrazione sostituisce completamente la vecchia configurazione YAML frammentata (basata su letture registro per registro e molteplici template sensor `_wip`), garantendo:
