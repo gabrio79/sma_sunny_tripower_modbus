@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradients -->
+    <radialGradient id="bgGlow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#141E30" />
+      <stop offset="100%" stop-color="#090D16" />
+    </radialGradient>
+    
+    <!-- Inverter Chassis Gradients -->
+    <linearGradient id="chassisGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2C3E50" />
+      <stop offset="50%" stop-color="#1E2A38" />
+      <stop offset="100%" stop-color="#151D28" />
+    </linearGradient>
+    <linearGradient id="chassisBorder" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4B6584" />
+      <stop offset="100%" stop-color="#1e272e" />
+    </linearGradient>
+    <linearGradient id="smaBlueGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#005B94" />
+      <stop offset="100%" stop-color="#0082D5" />
+    </linearGradient>
+    <linearGradient id="solarAmber" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF9F43" />
+      <stop offset="100%" stop-color="#EE5253" />
+    </linearGradient>
+    <linearGradient id="gridCyan" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10AC84" />
+      <stop offset="100%" stop-color="#1DD1A1" />
+    </linearGradient>
+    <linearGradient id="displayGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0A101D" />
+      <stop offset="100%" stop-color="#03070E" />
+    </linearGradient>
+
+    <!-- Filters -->
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+    <filter id="glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="glowAmber" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Grid Pattern -->
+    <pattern id="techGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.04"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1000" height="620" rx="16" fill="url(#bgGlow)"/>
+  <rect width="1000" height="620" rx="16" fill="url(#techGrid)"/>
+
+  <!-- Subtle Title Header -->
+  <text x="500" y="44" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="600" text-anchor="middle" letter-spacing="3">SMA SUNNY TRIPOWER • LIVE TELEMETRY</text>
+
+  <!-- DC INPUT SECTION (LEFT) -->
+  <!-- PV String 1 Node -->
+  <g transform="translate(60, 160)">
+    <!-- Container -->
+    <rect width="210" height="90" rx="12" fill="#141E2E" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
+    <circle cx="28" cy="28" r="16" fill="#FF9F43" fill-opacity="0.15"/>
+    <path d="M 28 17 L 33 24 L 30 24 L 32 31 L 23 23 L 26 23 Z" fill="#FF9F43" filter="url(#glowAmber)"/>
+    <text x="56" y="27" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="700">STRINGA 1 (MPPT 1)</text>
+    <text x="56" y="43" fill="#94A3B8" font-family="sans-serif" font-size="11">Tensione / Potenza DC</text>
+    <!-- Value Placeholder target area (X: 165, Y: 220) -->
+    <rect x="16" y="54" width="178" height="26" rx="6" fill="#0B1320" stroke="#FF9F43" stroke-width="0.8" stroke-opacity="0.4"/>
+  </g>
+
+  <!-- PV String 2 Node -->
+  <g transform="translate(60, 360)">
+    <rect width="210" height="90" rx="12" fill="#141E2E" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
+    <circle cx="28" cy="28" r="16" fill="#FF9F43" fill-opacity="0.15"/>
+    <path d="M 28 17 L 33 24 L 30 24 L 32 31 L 23 23 L 26 23 Z" fill="#FF9F43" filter="url(#glowAmber)"/>
+    <text x="56" y="27" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="700">STRINGA 2 (MPPT 2)</text>
+    <text x="56" y="43" fill="#94A3B8" font-family="sans-serif" font-size="11">Tensione / Potenza DC</text>
+    <!-- Value Placeholder target area (X: 165, Y: 420) -->
+    <rect x="16" y="54" width="178" height="26" rx="6" fill="#0B1320" stroke="#FF9F43" stroke-width="0.8" stroke-opacity="0.4"/>
+  </g>
+
+  <!-- DC Bus Connecting Pipes with Flow Animation effect -->
+  <path d="M 270 205 L 340 205 L 340 280 L 370 280" fill="none" stroke="#FF9F43" stroke-width="2.5" stroke-dasharray="6,4" opacity="0.85"/>
+  <path d="M 270 405 L 340 405 L 340 330 L 370 330" fill="none" stroke="#FF9F43" stroke-width="2.5" stroke-dasharray="6,4" opacity="0.85"/>
+
+  <!-- CENTRAL INVERTER CHASSIS -->
+  <g transform="translate(370, 90)">
+    <!-- Main Outer Body -->
+    <rect width="260" height="420" rx="20" fill="url(#chassisGrad)" stroke="url(#chassisBorder)" stroke-width="2.5" filter="url(#shadow)"/>
+    
+    <!-- Top SMA Brand Badge -->
+    <path d="M 18 18 Q 18 10 26 10 L 234 10 Q 242 10 242 18 L 242 36 L 18 36 Z" fill="#0B1320"/>
+    <rect x="28" y="18" width="46" height="18" rx="3" fill="#D32F2F"/>
+    <text x="51" y="31" fill="#FFFFFF" font-family="sans-serif" font-size="10" font-weight="900" text-anchor="middle">SMA</text>
+    <text x="86" y="31" fill="#CBD5E1" font-family="sans-serif" font-size="11" font-weight="700" letter-spacing="1">SUNNY TRIPOWER</text>
+    <circle cx="230" cy="27" r="4" fill="#10AC84" filter="url(#glowCyan)"/>
+
+    <!-- Central LCD Screen Panel -->
+    <rect x="30" y="80" width="200" height="160" rx="12" fill="url(#displayGrad)" stroke="#1E293B" stroke-width="1.5"/>
+    <rect x="36" y="86" width="188" height="30" rx="6" fill="#131C2E"/>
+    <text x="130" y="105" fill="#38BDF8" font-family="sans-serif" font-size="11" font-weight="700" text-anchor="middle">STATO OPERATIVO</text>
+    
+    <!-- Status Display Target Box (X: 500, Y: 220) -->
+    <circle cx="65" cy="155" r="22" fill="#1E293B" stroke="#334155" stroke-width="1.5"/>
+    <path d="M 57 155 L 63 161 L 73 149" fill="none" stroke="#10AC84" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Internal Temperature Indicator (X: 500, Y: 290) -->
+    <rect x="30" y="255" width="200" height="42" rx="8" fill="#111827" stroke="#1F2937" stroke-width="1"/>
+    <text x="44" y="280" fill="#94A3B8" font-family="sans-serif" font-size="11">Temperatura Inverter</text>
+
+    <!-- Cooling Heatsink Grille Bottom -->
+    <g transform="translate(30, 315)">
+      <rect width="200" height="85" rx="8" fill="#0E1624"/>
+      <line x1="20" y1="16" x2="180" y2="16" stroke="#1E293B" stroke-width="3" stroke-linecap="round"/>
+      <line x1="20" y1="30" x2="180" y2="30" stroke="#1E293B" stroke-width="3" stroke-linecap="round"/>
+      <line x1="20" y1="44" x2="180" y2="44" stroke="#1E293B" stroke-width="3" stroke-linecap="round"/>
+      <line x1="20" y1="58" x2="180" y2="58" stroke="#1E293B" stroke-width="3" stroke-linecap="round"/>
+      <line x1="20" y1="72" x2="180" y2="72" stroke="#1E293B" stroke-width="3" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <!-- AC OUTPUT SECTION (RIGHT) -->
+  <!-- AC Grid Line Connecting Pipe -->
+  <path d="M 630 300 L 730 300" fill="none" stroke="#10AC84" stroke-width="3" stroke-dasharray="6,4" opacity="0.95"/>
+
+  <!-- AC Power to Grid Box -->
+  <g transform="translate(730, 160)">
+    <rect width="210" height="90" rx="12" fill="#141E2E" stroke="#10AC84" stroke-width="1.8" filter="url(#shadow)"/>
+    <circle cx="28" cy="28" r="16" fill="#10AC84" fill-opacity="0.15"/>
+    <!-- AC Waveform Icon -->
+    <path d="M 20 28 Q 24 20 28 28 T 36 28" fill="none" stroke="#10AC84" stroke-width="2.5" stroke-linecap="round" filter="url(#glowCyan)"/>
+    <text x="56" y="27" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="700">POTENZA DI RETE</text>
+    <text x="56" y="43" fill="#94A3B8" font-family="sans-serif" font-size="11">AC Errore / Immissione</text>
+    <!-- Value Placeholder target area (X: 835, Y: 220) -->
+    <rect x="16" y="54" width="178" height="26" rx="6" fill="#0B1320" stroke="#10AC84" stroke-width="0.8" stroke-opacity="0.4"/>
+  </g>
+
+  <!-- ENERGY STATS CARDS (RIGHT BOTTOM) -->
+  <g transform="translate(730, 275)">
+    <!-- Daily Yield -->
+    <rect width="210" height="80" rx="10" fill="#141E2E" stroke="#334155" stroke-width="1.2" filter="url(#shadow)"/>
+    <text x="20" y="26" fill="#94A3B8" font-family="sans-serif" font-size="11" font-weight="600">PRODUZIONE GIORNALIERA</text>
+    <!-- Value Placeholder target area (X: 835, Y: 320) -->
+    <rect x="16" y="38" width="178" height="30" rx="6" fill="#0B1320"/>
+  </g>
+
+  <g transform="translate(730, 375)">
+    <!-- Total Yield -->
+    <rect width="210" height="80" rx="10" fill="#141E2E" stroke="#334155" stroke-width="1.2" filter="url(#shadow)"/>
+    <text x="20" y="26" fill="#94A3B8" font-family="sans-serif" font-size="11" font-weight="600">PRODUZIONE TOTALE</text>
+    <!-- Value Placeholder target area (X: 835, Y: 420) -->
+    <rect x="16" y="38" width="178" height="30" rx="6" fill="#0B1320"/>
+  </g>
+
+  <!-- Bottom Footer Status Line -->
+  <text x="500" y="585" fill="#475569" font-family="sans-serif" font-size="11" text-anchor="middle">Modbus TCP Protocol • 5s Polling Real-Time Active</text>
+</svg>

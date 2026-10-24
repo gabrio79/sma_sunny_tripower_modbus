@@ -35,6 +35,19 @@ custom_components/sma_modbus/
 
 ---
 
+## 🎨 Dashboard Lovelace Vettoriale (SVG)
+
+È disponibile una splendida dashboard Lovelace con **schematica vettoriale interattiva (SVG)** dell'inverter SMA Sunny Tripower, con flusso di potenza in tempo reale, indicatori a lancetta e resa energetica:
+
+- 📖 **[Guida completa alla configurazione della Dashboard (DASHBOARD.md)](DASHBOARD.md)**
+- 💻 **[Codice Lovelace pronto da incollare (examples/lovelace_sma_dashboard.yaml)](examples/lovelace_sma_dashboard.yaml)**
+
+<p align="center">
+  <img src="images/sma_inverter_vector.svg" alt="Schematica Vettoriale SMA Sunny Tripower" width="85%">
+</p>
+
+---
+
 ## ⚡ Registri Modbus Mappati
 
 | Registro | Tipo | Precisione / Scala | Unità | Polling | Descrizione |
