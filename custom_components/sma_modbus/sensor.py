@@ -1,6 +1,7 @@
 """Sensor platform for SMA Sunny Tripower Modbus integration."""
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -16,9 +17,11 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import slugify
 
 from .const import (
     CONF_STRINGS_LABEL,
@@ -43,6 +46,8 @@ from .const import (
 )
 from .coordinator import SmaModbusCoordinator
 
+_LOGGER = logging.getLogger(__name__)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -56,7 +61,7 @@ async def async_setup_entry(
 
     strings_label = entry.data.get(CONF_STRINGS_LABEL, DEFAULT_STRINGS_LABEL)
 
-    # Determine dynamic translation keys for MPPT strings
+    # Determine dynamic keys for MPPT strings (e.g. pv_power_c / pv_power_d or pv_power_a / pv_power_b)
     if strings_label == STRINGS_LABEL_CD:
         pv_1_key = "pv_power_c"
         pv_2_key = "pv_power_d"
@@ -77,6 +82,12 @@ async def async_setup_entry(
                 STATUS_ERROR,
                 STATUS_UNKNOWN,
             ],
+        ),
+        SensorEntityDescription(
+            key=KEY_STATUS_CODE,
+            translation_key="status_wip",
+            icon="mdi:numeric",
+            entity_registry_enabled_default=True,
         ),
         SensorEntityDescription(
             key=KEY_GRID_POWER,
@@ -131,8 +142,47 @@ async def async_setup_entry(
         ),
     )
 
+    # Compute device slug (e.g. "Inverter 1" -> "inverter_1", "SMA Inverter 1" -> "inverter_1")
+    device_slug = slugify(entry.title)
+    if device_slug.startswith("sma_inverter_"):
+        device_slug = device_slug.replace("sma_", "")
+    elif device_slug.startswith("sma_"):
+        device_slug = device_slug.replace("sma_", "")
+
+    key_to_suffix = {
+        KEY_STATUS: "status",
+        KEY_STATUS_CODE: "status_wip",
+        KEY_GRID_POWER: "grid_power",
+        KEY_PV_POWER_1: pv_1_key,
+        KEY_PV_POWER_2: pv_2_key,
+        KEY_DAILY_YIELD: "daily_yield",
+        KEY_TOTAL_YIELD: "total_yield",
+        KEY_TEMPERATURE: "temperature",
+    }
+
+    # Entity registry migration for backwards compatibility and yaml file consistency
+    ent_reg = er.async_get(hass)
+    for desc in descriptions:
+        target_entity_id = f"sensor.{device_slug}_{key_to_suffix[desc.key]}"
+        unique_id = f"{entry.entry_id}_{desc.key}"
+        current_entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, unique_id)
+        if current_entity_id and current_entity_id != target_entity_id:
+            if ent_reg.async_get(target_entity_id) is None:
+                _LOGGER.info(
+                    "Migrating entity_id from %s to %s (unique_id: %s)",
+                    current_entity_id,
+                    target_entity_id,
+                    unique_id,
+                )
+                ent_reg.async_update_entity(current_entity_id, new_entity_id=target_entity_id)
+
     async_add_entities(
-        SmaModbusSensor(coordinator, description, entry)
+        SmaModbusSensor(
+            coordinator=coordinator,
+            description=description,
+            entry=entry,
+            entity_id=f"sensor.{device_slug}_{key_to_suffix[description.key]}",
+        )
         for description in descriptions
     )
 
@@ -147,11 +197,14 @@ class SmaModbusSensor(CoordinatorEntity[SmaModbusCoordinator], SensorEntity):
         coordinator: SmaModbusCoordinator,
         description: SensorEntityDescription,
         entry: ConfigEntry,
+        entity_id: str | None = None,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self.entity_description = description
         self.entry = entry
+        if entity_id:
+            self.entity_id = entity_id
 
         # Stable unique identifier per sensor entity
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"

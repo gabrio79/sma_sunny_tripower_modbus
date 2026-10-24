@@ -100,25 +100,25 @@ class SmaTripowerCard extends HTMLElement {
 
     // Resolve entities dynamically
     const gridPowerId = this._resolveEntityId('grid_power_entity', [
-      'potenza_di_rete', 'grid_power', 'grid_power_wip'
+      'grid_power', 'potenza_di_rete', 'grid_power_wip'
     ]);
     const pv1Id = this._resolveEntityId('pv_power_1_entity', [
-      'potenza_fv_c', 'potenza_fv_a', 'pv_power_c', 'pv_power_a', 'pv_power_1'
+      'pv_power_c', 'pv_power_a', 'pv_power_1', 'potenza_fv_c', 'potenza_fv_a'
     ]);
     const pv2Id = this._resolveEntityId('pv_power_2_entity', [
-      'potenza_fv_d', 'potenza_fv_b', 'pv_power_d', 'pv_power_b', 'pv_power_2'
+      'pv_power_d', 'pv_power_b', 'pv_power_2', 'potenza_fv_d', 'potenza_fv_b'
     ]);
     const statusId = this._resolveEntityId('status_entity', [
-      'stato', 'status', 'status_wip'
+      'status', 'stato', 'status_wip'
     ]);
     const tempId = this._resolveEntityId('temperature_entity', [
-      'temperatura', 'temperature', 'temperature_wip'
+      'temperature', 'temperatura', 'temperature_wip'
     ]);
     const dailyId = this._resolveEntityId('daily_yield_entity', [
-      'produzione_giornaliera', 'daily_yield'
+      'daily_yield', 'produzione_giornaliera'
     ]);
     const totalId = this._resolveEntityId('total_yield_entity', [
-      'produzione_totale', 'total_yield'
+      'total_yield', 'produzione_totale'
     ]);
 
     // Format power values

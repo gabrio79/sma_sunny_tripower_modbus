@@ -60,6 +60,9 @@
           "unknown": "Unknown"
         }
       },
+      "status_wip": {
+        "name": "Status WIP"
+      },
       "grid_power": {
         "name": "Grid Power"
       },

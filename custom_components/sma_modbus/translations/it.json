@@ -51,7 +51,7 @@
   "entity": {
     "sensor": {
       "status": {
-        "name": "Stato",
+        "name": "Status",
         "state": {
           "ok": "OK",
           "off": "Spento",
@@ -60,35 +60,38 @@
           "unknown": "Sconosciuto"
         }
       },
+      "status_wip": {
+        "name": "Status WIP"
+      },
       "grid_power": {
-        "name": "Potenza di rete"
+        "name": "Grid Power"
       },
       "pv_power_a": {
-        "name": "Potenza FV A"
+        "name": "PV Power A"
       },
       "pv_power_b": {
-        "name": "Potenza FV B"
+        "name": "PV Power B"
       },
       "pv_power_c": {
-        "name": "Potenza FV C"
+        "name": "PV Power C"
       },
       "pv_power_d": {
-        "name": "Potenza FV D"
+        "name": "PV Power D"
       },
       "pv_power_1": {
-        "name": "Potenza FV 1"
+        "name": "PV Power 1"
       },
       "pv_power_2": {
-        "name": "Potenza FV 2"
+        "name": "PV Power 2"
       },
       "daily_yield": {
-        "name": "Produzione giornaliera"
+        "name": "Daily Yield"
       },
       "total_yield": {
-        "name": "Produzione totale"
+        "name": "Total Yield"
       },
       "temperature": {
-        "name": "Temperatura"
+        "name": "Temperature"
       }
     }
   }

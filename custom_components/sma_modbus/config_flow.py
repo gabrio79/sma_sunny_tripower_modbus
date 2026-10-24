@@ -104,15 +104,20 @@ class SmaModbusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             success, error_code = await validate_connection(host, port, slave_id)
             if success:
+                entry_data = {
+                    CONF_HOST: host,
+                    CONF_PORT: port,
+                    CONF_SLAVE_ID: slave_id,
+                    CONF_NAME: name,
+                    CONF_STRINGS_LABEL: strings_label,
+                }
+                if user_input.get(CONF_STRING_1_NAME):
+                    entry_data[CONF_STRING_1_NAME] = user_input[CONF_STRING_1_NAME].strip()
+                if user_input.get(CONF_STRING_2_NAME):
+                    entry_data[CONF_STRING_2_NAME] = user_input[CONF_STRING_2_NAME].strip()
                 return self.async_create_entry(
                     title=name,
-                    data={
-                        CONF_HOST: host,
-                        CONF_PORT: port,
-                        CONF_SLAVE_ID: slave_id,
-                        CONF_NAME: name,
-                        CONF_STRINGS_LABEL: strings_label,
-                    },
+                    data=entry_data,
                 )
 
             if error_code:
