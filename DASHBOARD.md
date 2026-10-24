@@ -65,6 +65,8 @@ Se Home Assistant non carica automaticamente le risorse:
 | `type` | string | **Obbligatorio** | `custom:sma-tripower-card` |
 | `title` | string | `SMA Sunny Tripower` | Titolo mostrato nell'intestazione |
 | `inverter` | string | `inverter_1` | Prefisso delle entità (`inverter_1` o `inverter_2`) |
+| `theme` | string | `dark` | Tema grafico: `dark` (scuro moderno) o `light` (sfondo bianco/chiaro) |
+| `white_background` | boolean | `false` | Imposta rapidamente lo sfondo bianco se `true` (alias per `theme: light`) |
 | `animation` | boolean | `true` | Abilita/disabilita le animazioni di flusso |
 | `show_header` | boolean | `true` | Mostra/nasconde l'intestazione con badge di stato |
 | `show_stats` | boolean | `true` | Mostra/nasconde i riquadri inferiori (Oggi, Totale, Temp) |

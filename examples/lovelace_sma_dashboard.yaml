@@ -6,27 +6,38 @@
 # - Flussi di energia animati in tempo reale (stringhe -> inverter -> rete)
 # - Display digitale stile LCD SMA e indicatore LED di stato operativo
 # - Telemetria completa: Oggi, Totale, Temperatura, Rendimento, Stato
-# - Nessun file SVG esterno da copiare né coordinate da configurare!
+# - Supporto doppio tema: Dark Glassmorphic (default) e White/Light Clean
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# ESEMPIO 1: Configurazione Base Automatica per Inverter 1
+# ESEMPIO 1: Tema Scuro (Dark - Predefinito) per Inverter 1
 # ------------------------------------------------------------------------------
 type: custom:sma-tripower-card
 title: "Inverter 1 - SMA Sunny Tripower"
 inverter: "inverter_1"
+theme: "dark"
 animation: true
 
 # ------------------------------------------------------------------------------
-# ESEMPIO 2: Configurazione per Inverter 2
+# ESEMPIO 2: Tema Bianco / Chiaro (Light Mode) per Inverter 1
+# ------------------------------------------------------------------------------
+# type: custom:sma-tripower-card
+# title: "Inverter 1 - SMA Sunny Tripower"
+# inverter: "inverter_1"
+# theme: "light"         # oppure: white_background: true
+# animation: true
+
+# ------------------------------------------------------------------------------
+# ESEMPIO 3: Configurazione per Inverter 2
 # ------------------------------------------------------------------------------
 # type: custom:sma-tripower-card
 # title: "Inverter 2 - SMA Sunny Tripower"
 # inverter: "inverter_2"
+# theme: "light"         # "dark" o "light"
 # animation: true
 
 # ------------------------------------------------------------------------------
-# ESEMPIO 3: Dashboard con entrambi gli inverter affiancati o impilati
+# ESEMPIO 4: Dashboard con entrambi gli inverter
 # ------------------------------------------------------------------------------
 # type: vertical-stack
 # title: "Monitoraggio Impianto Fotovoltaico SMA"
@@ -34,25 +45,11 @@ animation: true
 #   - type: custom:sma-tripower-card
 #     title: "SMA Sunny Tripower #1"
 #     inverter: "inverter_1"
+#     theme: "light"
 #     animation: true
 #
 #   - type: custom:sma-tripower-card
 #     title: "SMA Sunny Tripower #2"
 #     inverter: "inverter_2"
+#     theme: "light"
 #     animation: true
-
-# ------------------------------------------------------------------------------
-# ESEMPIO 4: Mappatura manuale avanzata delle entità (opzionale)
-# ------------------------------------------------------------------------------
-# type: custom:sma-tripower-card
-# title: "Mio Impianto Solare"
-# grid_power_entity: sensor.inverter_1_potenza_di_rete
-# pv_power_1_entity: sensor.inverter_1_potenza_fv_c
-# pv_power_2_entity: sensor.inverter_1_potenza_fv_d
-# daily_yield_entity: sensor.inverter_1_produzione_giornaliera
-# total_yield_entity: sensor.inverter_1_produzione_totale
-# temperature_entity: sensor.inverter_1_temperatura
-# status_entity: sensor.inverter_1_stato
-# animation: true
-# show_header: true
-# show_stats: true

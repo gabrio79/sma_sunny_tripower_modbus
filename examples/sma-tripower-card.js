@@ -4,10 +4,10 @@
  * 
  * Standalone, zero-dependency Lovelace card for Home Assistant.
  * Fully embedded vector schematic, animated energy flows, live telemetry tiles,
- * dark glassmorphic styling, and integrated card editor.
+ * dual theme support (Dark Glassmorphic & White/Light Clean), and integrated card editor.
  */
 
-const CARD_VERSION = '1.1.0';
+const CARD_VERSION = '1.2.0';
 console.info(
   `%c SMA-TRIPOWER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #D32F2F; font-weight: 700; border-radius: 3px 0 0 3px;',
@@ -28,6 +28,7 @@ class SmaTripowerCard extends HTMLElement {
       title: 'SMA Sunny Tripower',
       inverter: 'inverter_1',
       animation: true,
+      theme: 'dark',
     };
   }
 
@@ -41,6 +42,8 @@ class SmaTripowerCard extends HTMLElement {
       title: 'SMA Sunny Tripower',
       inverter: 'inverter_1',
       animation: true,
+      theme: 'dark',
+      white_background: false,
       show_header: true,
       show_stats: true,
     }, config);
@@ -227,6 +230,7 @@ class SmaTripowerCard extends HTMLElement {
     const title = this._config.title || 'SMA Sunny Tripower';
     const showHeader = this._config.show_header !== false;
     const showStats = this._config.show_stats !== false;
+    const isLight = (this._config.theme === 'light' || this._config.white_background === true);
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -245,19 +249,23 @@ class SmaTripowerCard extends HTMLElement {
         }
 
         ha-card {
-          background: linear-gradient(155deg, #0d162a 0%, #060913 100%);
-          border: 1px solid var(--sma-border);
           border-radius: 22px;
-          color: var(--sma-text);
           padding: 22px;
           overflow: hidden;
           position: relative;
-          box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          transition: background 0.3s ease, color 0.3s ease;
         }
 
-        /* Ambient Glow effects */
-        ha-card::before {
+        /* DARK THEME (DEFAULT) */
+        ha-card.theme-dark {
+          background: linear-gradient(155deg, #0d162a 0%, #060913 100%);
+          border: 1px solid var(--sma-border);
+          color: var(--sma-text);
+          box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        ha-card.theme-dark::before {
           content: "";
           position: absolute;
           top: -40px;
@@ -268,7 +276,7 @@ class SmaTripowerCard extends HTMLElement {
           pointer-events: none;
         }
 
-        ha-card::after {
+        ha-card.theme-dark::after {
           content: "";
           position: absolute;
           bottom: -40px;
@@ -276,6 +284,36 @@ class SmaTripowerCard extends HTMLElement {
           width: 240px;
           height: 240px;
           background: radial-gradient(circle, var(--sma-green-glow) 0%, transparent 70%);
+          pointer-events: none;
+        }
+
+        /* WHITE / LIGHT THEME */
+        ha-card.theme-light {
+          background: linear-gradient(155deg, #FFFFFF 0%, #F8FAFC 100%);
+          border: 1px solid rgba(203, 213, 225, 0.85);
+          color: #0F172A;
+          box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+
+        ha-card.theme-light::before {
+          content: "";
+          position: absolute;
+          top: -40px;
+          left: -40px;
+          width: 220px;
+          height: 220px;
+          background: radial-gradient(circle, rgba(245, 158, 11, 0.16) 0%, transparent 70%);
+          pointer-events: none;
+        }
+
+        ha-card.theme-light::after {
+          content: "";
+          position: absolute;
+          bottom: -40px;
+          right: -40px;
+          width: 240px;
+          height: 240px;
+          background: radial-gradient(circle, rgba(16, 185, 129, 0.16) 0%, transparent 70%);
           pointer-events: none;
         }
 
@@ -309,9 +347,10 @@ class SmaTripowerCard extends HTMLElement {
         .card-title {
           font-size: 17px;
           font-weight: 700;
-          color: var(--sma-text);
           letter-spacing: 0.3px;
         }
+        ha-card.theme-dark .card-title { color: var(--sma-text); }
+        ha-card.theme-light .card-title { color: #0F172A; }
 
         .header-status-badge {
           font-size: 11px;
@@ -336,45 +375,54 @@ class SmaTripowerCard extends HTMLElement {
 
         .status-ok {
           background: rgba(16, 185, 129, 0.16);
-          color: #34D399;
+          color: #10B981;
           border: 1px solid rgba(16, 185, 129, 0.45);
         }
         .status-ok::before {
-          background: #34D399;
-          box-shadow: 0 0 8px #34D399;
+          background: #10B981;
+          box-shadow: 0 0 8px #10B981;
         }
 
         .status-off {
           background: rgba(148, 163, 184, 0.15);
-          color: #94A3B8;
-          border: 1px solid rgba(148, 163, 184, 0.3);
+          color: #64748B;
+          border: 1px solid rgba(148, 163, 184, 0.35);
         }
         .status-off::before { background: #94A3B8; }
 
         .status-warn {
           background: rgba(245, 158, 11, 0.15);
-          color: #FBBF24;
+          color: #D97706;
           border: 1px solid rgba(245, 158, 11, 0.45);
         }
-        .status-warn::before { background: #FBBF24; box-shadow: 0 0 8px #FBBF24; }
+        .status-warn::before { background: #D97706; box-shadow: 0 0 8px #D97706; }
 
         .status-err {
           background: rgba(239, 68, 68, 0.15);
-          color: #F87171;
+          color: #DC2626;
           border: 1px solid rgba(239, 68, 68, 0.45);
         }
-        .status-err::before { background: #F87171; box-shadow: 0 0 8px #F87171; }
+        .status-err::before { background: #DC2626; box-shadow: 0 0 8px #DC2626; }
 
         /* SCHEMATIC CONTAINER */
         .schematic-wrapper {
           position: relative;
-          background: rgba(15, 23, 42, 0.6);
-          border: 1px solid rgba(51, 65, 85, 0.55);
           border-radius: 18px;
           padding: 16px;
           margin-bottom: 16px;
           backdrop-filter: blur(10px);
           z-index: 2;
+          transition: background 0.3s ease, border-color 0.3s ease;
+        }
+
+        ha-card.theme-dark .schematic-wrapper {
+          background: rgba(15, 23, 42, 0.6);
+          border: 1px solid rgba(51, 65, 85, 0.55);
+        }
+
+        ha-card.theme-light .schematic-wrapper {
+          background: rgba(241, 245, 249, 0.85);
+          border: 1px solid rgba(203, 213, 225, 0.9);
         }
 
         svg.schematic-svg {
@@ -385,21 +433,32 @@ class SmaTripowerCard extends HTMLElement {
         }
 
         /* SVG Elements Styling */
-        .node-rect {
+        ha-card.theme-dark .node-rect {
           fill: #0F172A;
           stroke: #334155;
           stroke-width: 1.5;
           rx: 10px;
           filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
-          transition: stroke 0.3s;
-        }
-        .node-rect:hover {
-          stroke: #64748B;
         }
 
-        .svg-wire-track {
+        ha-card.theme-light .node-rect {
+          fill: #FFFFFF;
+          stroke: #CBD5E1;
+          stroke-width: 1.5;
+          rx: 10px;
+          filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.06));
+        }
+
+        ha-card.theme-dark .svg-wire-track {
           fill: none;
           stroke: #1E293B;
+          stroke-width: 4;
+          stroke-linecap: round;
+        }
+
+        ha-card.theme-light .svg-wire-track {
+          fill: none;
+          stroke: #CBD5E1;
           stroke-width: 4;
           stroke-linecap: round;
         }
@@ -441,12 +500,20 @@ class SmaTripowerCard extends HTMLElement {
         }
 
         /* Inverter SVG Body */
-        .inverter-body {
-          fill: url(#invGradient);
+        ha-card.theme-dark .inverter-body {
+          fill: url(#invGradientDark);
           stroke: #475569;
           stroke-width: 2;
           rx: 14px;
           filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.65));
+        }
+
+        ha-card.theme-light .inverter-body {
+          fill: url(#invGradientLight);
+          stroke: #94A3B8;
+          stroke-width: 2;
+          rx: 14px;
+          filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.12));
         }
 
         .inverter-lcd {
@@ -460,10 +527,12 @@ class SmaTripowerCard extends HTMLElement {
           font-size: 10px;
           font-weight: 700;
           letter-spacing: 0.6px;
-          fill: #94A3B8;
           text-anchor: middle;
           text-transform: uppercase;
         }
+
+        ha-card.theme-dark .svg-text-label { fill: #94A3B8; }
+        ha-card.theme-light .svg-text-label { fill: #64748B; }
 
         .svg-text-value {
           font-size: 16px;
@@ -471,8 +540,12 @@ class SmaTripowerCard extends HTMLElement {
           text-anchor: middle;
         }
 
-        .val-pv-color { fill: #FBBF24; }
-        .val-grid-color { fill: #34D399; }
+        ha-card.theme-dark .val-pv-color { fill: #FBBF24; }
+        ha-card.theme-light .val-pv-color { fill: #D97706; }
+
+        ha-card.theme-dark .val-grid-color { fill: #34D399; }
+        ha-card.theme-light .val-grid-color { fill: #059669; }
+
         .val-lcd-color { fill: #38BDF8; }
 
         /* TELEMETRY STATS GRID */
@@ -485,8 +558,6 @@ class SmaTripowerCard extends HTMLElement {
         }
 
         .tile {
-          background: rgba(15, 23, 42, 0.65);
-          border: 1px solid rgba(51, 65, 85, 0.5);
           border-radius: 14px;
           padding: 12px 14px;
           display: flex;
@@ -496,9 +567,19 @@ class SmaTripowerCard extends HTMLElement {
           transition: transform 0.2s, border-color 0.2s;
         }
 
+        ha-card.theme-dark .tile {
+          background: rgba(15, 23, 42, 0.65);
+          border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        ha-card.theme-light .tile {
+          background: #FFFFFF;
+          border: 1px solid rgba(226, 232, 240, 0.9);
+          box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
+        }
+
         .tile:hover {
           transform: translateY(-2px);
-          border-color: rgba(148, 163, 184, 0.4);
         }
 
         .tile-header {
@@ -507,10 +588,12 @@ class SmaTripowerCard extends HTMLElement {
           gap: 6px;
           font-size: 11px;
           font-weight: 700;
-          color: var(--sma-muted);
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
+
+        ha-card.theme-dark .tile-header { color: var(--sma-muted); }
+        ha-card.theme-light .tile-header { color: #64748B; }
 
         .tile-icon {
           width: 15px;
@@ -520,9 +603,11 @@ class SmaTripowerCard extends HTMLElement {
         .tile-val {
           font-size: 17px;
           font-weight: 800;
-          color: var(--sma-text);
           letter-spacing: -0.3px;
         }
+
+        ha-card.theme-dark .tile-val { color: var(--sma-text); }
+        ha-card.theme-light .tile-val { color: #0F172A; }
 
         @media (max-width: 580px) {
           .telemetry-grid {
@@ -531,7 +616,7 @@ class SmaTripowerCard extends HTMLElement {
         }
       </style>
 
-      <ha-card>
+      <ha-card class="${isLight ? 'theme-light' : 'theme-dark'}">
         <!-- Card Header -->
         ${showHeader ? `
           <div class="card-header">
@@ -547,16 +632,23 @@ class SmaTripowerCard extends HTMLElement {
         <div class="schematic-wrapper">
           <svg class="schematic-svg" viewBox="0 0 540 240">
             <defs>
-              <!-- Inverter Body Gradient -->
-              <linearGradient id="invGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <!-- Inverter Dark Gradient -->
+              <linearGradient id="invGradientDark" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stop-color="#1E293B" />
                 <stop offset="50%" stop-color="#152033" />
                 <stop offset="100%" stop-color="#0B1324" />
               </linearGradient>
 
+              <!-- Inverter Light Gradient -->
+              <linearGradient id="invGradientLight" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#FFFFFF" />
+                <stop offset="50%" stop-color="#F1F5F9" />
+                <stop offset="100%" stop-color="#E2E8F0" />
+              </linearGradient>
+
               <!-- Solar Panel Pattern -->
               <pattern id="solarGrid" width="6" height="6" patternUnits="userSpaceOnUse">
-                <rect width="6" height="6" fill="#0F172A" stroke="#1E293B" stroke-width="0.8"/>
+                <rect width="6" height="6" fill="${isLight ? '#F8FAFC' : '#0F172A'}" stroke="${isLight ? '#E2E8F0' : '#1E293B'}" stroke-width="0.8"/>
               </pattern>
             </defs>
 
@@ -581,9 +673,9 @@ class SmaTripowerCard extends HTMLElement {
               <rect class="node-rect" width="110" height="80" />
               <!-- Mini solar panel icon -->
               <g transform="translate(12, 12)">
-                <rect width="22" height="16" fill="url(#solarGrid)" stroke="#F59E0B" stroke-width="1.2" rx="2" />
-                <line x1="11" y1="0" x2="11" y2="16" stroke="#F59E0B" stroke-width="0.8" />
-                <line x1="0" y1="8" x2="22" y2="8" stroke="#F59E0B" stroke-width="0.8" />
+                <rect width="22" height="16" fill="url(#solarGrid)" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="1.2" rx="2" />
+                <line x1="11" y1="0" x2="11" y2="16" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
+                <line x1="0" y1="8" x2="22" y2="8" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
               </g>
               <text x="42" y="24" class="svg-text-label" text-anchor="start">STRINGA 1</text>
               <text x="55" y="58" class="svg-text-value val-pv-color val-pv1">-- W</text>
@@ -594,9 +686,9 @@ class SmaTripowerCard extends HTMLElement {
               <rect class="node-rect" width="110" height="80" />
               <!-- Mini solar panel icon -->
               <g transform="translate(12, 12)">
-                <rect width="22" height="16" fill="url(#solarGrid)" stroke="#F59E0B" stroke-width="1.2" rx="2" />
-                <line x1="11" y1="0" x2="11" y2="16" stroke="#F59E0B" stroke-width="0.8" />
-                <line x1="0" y1="8" x2="22" y2="8" stroke="#F59E0B" stroke-width="0.8" />
+                <rect width="22" height="16" fill="url(#solarGrid)" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="1.2" rx="2" />
+                <line x1="11" y1="0" x2="11" y2="16" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
+                <line x1="0" y1="8" x2="22" y2="8" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
               </g>
               <text x="42" y="24" class="svg-text-label" text-anchor="start">STRINGA 2</text>
               <text x="55" y="58" class="svg-text-value val-pv-color val-pv2">-- W</text>
@@ -610,12 +702,12 @@ class SmaTripowerCard extends HTMLElement {
               <rect class="inverter-body" width="160" height="210" />
 
               <!-- Top Styling Bar -->
-              <rect x="50" y="8" width="60" height="3" fill="#475569" rx="1.5" />
+              <rect x="50" y="8" width="60" height="3" fill="${isLight ? '#94A3B8' : '#475569'}" rx="1.5" />
 
               <!-- Brand Label inside Inverter -->
               <rect x="18" y="20" width="34" height="15" fill="#DC2626" rx="3" />
               <text x="35" y="31" fill="#FFFFFF" font-size="9" font-weight="900" text-anchor="middle" letter-spacing="0.5">SMA</text>
-              <text x="60" y="31" fill="#E2E8F0" font-size="10" font-weight="700" text-anchor="start">Sunny Tripower</text>
+              <text x="60" y="31" fill="${isLight ? '#1E293B' : '#E2E8F0'}" font-size="10" font-weight="700" text-anchor="start">Sunny Tripower</text>
 
               <!-- Central Digital Matrix LCD -->
               <rect class="inverter-lcd" x="16" y="52" width="128" height="74" />
@@ -626,15 +718,15 @@ class SmaTripowerCard extends HTMLElement {
               <!-- LED Indicator & Status -->
               <g transform="translate(25, 148)">
                 <circle class="inverter-led" cx="6" cy="6" r="5" fill="#10B981" />
-                <text x="18" y="9" font-size="9" font-weight="700" fill="#94A3B8">STATO OPERATIVO</text>
+                <text x="18" y="9" font-size="9" font-weight="700" fill="${isLight ? '#475569' : '#94A3B8'}">STATO OPERATIVO</text>
               </g>
 
               <!-- Temperature readout on inverter -->
               <g transform="translate(25, 178)">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="#94A3B8">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="${isLight ? '#64748B' : '#94A3B8'}">
                   <path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-2V5c0-.55.45-1 1-1s1 .45 1 1v1h-1v1h1v2h-1v1h1v1h-2z"/>
                 </svg>
-                <text x="18" y="10" font-size="10" font-weight="800" fill="#E2E8F0" class="val-temp">-- °C</text>
+                <text x="18" y="10" font-size="10" font-weight="800" fill="${isLight ? '#0F172A' : '#E2E8F0'}" class="val-temp">-- °C</text>
               </g>
             </g>
 
@@ -645,7 +737,7 @@ class SmaTripowerCard extends HTMLElement {
               <rect class="node-rect" width="110" height="80" />
               <!-- Mini Grid / Transmission Icon -->
               <g transform="translate(12, 12)">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#10B981">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="${isLight ? '#059669' : '#10B981'}">
                   <path d="M11 20H6.5q-.2 0-.35-.15t-.15-.35v-4q0-.2.15-.35T6.5 15h9q.2 0 .35.15t.15.35v4q0 .2-.15.35t-.35.15H13v3h-2v-3Zm-2.5-7-2-7h2.2l.9 3.5.9-3.5h2.2l-2 7H8.5Z"/>
                 </svg>
               </g>
@@ -660,7 +752,7 @@ class SmaTripowerCard extends HTMLElement {
           <div class="telemetry-grid">
             <div class="tile">
               <div class="tile-header">
-                <svg class="tile-icon" viewBox="0 0 24 24" fill="#F59E0B">
+                <svg class="tile-icon" viewBox="0 0 24 24" fill="${isLight ? '#D97706' : '#F59E0B'}">
                   <path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/>
                 </svg>
                 Oggi
@@ -690,12 +782,12 @@ class SmaTripowerCard extends HTMLElement {
 
             <div class="tile">
               <div class="tile-header">
-                <svg class="tile-icon" viewBox="0 0 24 24" fill="#10B981">
+                <svg class="tile-icon" viewBox="0 0 24 24" fill="${isLight ? '#059669' : '#10B981'}">
                   <path d="M13 2.05v3.03c3.39.49 6 3.39 6 6.92 0 .9-.18 1.75-.48 2.54l2.6 1.53c.56-1.24.88-2.62.88-4.07 0-5.18-3.95-9.45-9-9.95zM12 19c-3.87 0-7-3.13-7-7 0-3.53 2.61-6.43 6-6.92V2.05c-5.06.5-9 4.76-9 9.95 0 5.52 4.47 10 9.99 10 3.31 0 6.24-1.61 8.04-4.09l-2.45-1.45C16.3 17.8 14.28 19 12 19z"/>
                 </svg>
                 Rendimento
               </div>
-              <div class="tile-val" style="color: #34D399;">98.4 %</div>
+              <div class="tile-val" style="color: ${isLight ? '#059669' : '#34D399'};">98.4 %</div>
             </div>
           </div>
         ` : ''}
@@ -742,6 +834,7 @@ class SmaTripowerCardEditor extends HTMLElement {
     const title = this._config.title || 'SMA Sunny Tripower';
     const inverter = this._config.inverter || 'inverter_1';
     const animation = this._config.animation !== false;
+    const theme = (this._config.theme === 'light' || this._config.white_background === true) ? 'light' : 'dark';
     const showHeader = this._config.show_header !== false;
     const showStats = this._config.show_stats !== false;
 
@@ -788,6 +881,14 @@ class SmaTripowerCardEditor extends HTMLElement {
           <select class="form-input" data-key="inverter">
             <option value="inverter_1" ${inverter === 'inverter_1' ? 'selected' : ''}>Inverter 1 (inverter_1)</option>
             <option value="inverter_2" ${inverter === 'inverter_2' ? 'selected' : ''}>Inverter 2 (inverter_2)</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label>Tema / Sfondo</label>
+          <select class="form-input" data-key="theme">
+            <option value="dark" ${theme === 'dark' ? 'selected' : ''}>Scuro (Dark Modern Glass)</option>
+            <option value="light" ${theme === 'light' ? 'selected' : ''}>Bianco / Chiaro (Light Mode)</option>
           </select>
         </div>
 
