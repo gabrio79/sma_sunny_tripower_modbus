@@ -20,8 +20,6 @@ from homeassistant.helpers.selector import (
 )
 
 from .const import (
-    BLOCK_SLOW_STATUS_COUNT,
-    BLOCK_SLOW_STATUS_START,
     CONF_HOST,
     CONF_NAME,
     CONF_PORT,
@@ -29,6 +27,7 @@ from .const import (
     CONF_SCAN_INTERVAL_SLOW,
     CONF_SLAVE_ID,
     CONF_STRINGS_LABEL,
+    COUNT_STATUS,
     DEFAULT_NAME,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL_FAST,
@@ -36,6 +35,7 @@ from .const import (
     DEFAULT_SLAVE_ID,
     DEFAULT_STRINGS_LABEL,
     DOMAIN,
+    REG_STATUS,
     STRINGS_LABEL_AB,
     STRINGS_LABEL_CD,
     STRINGS_LABEL_OPTIONS,
@@ -58,8 +58,8 @@ async def validate_connection(
         # Attempt to read status register (30201) using universal pymodbus helper
         await async_read_holding_registers(
             client=client,
-            address=BLOCK_SLOW_STATUS_START,
-            count=BLOCK_SLOW_STATUS_COUNT,
+            address=REG_STATUS,
+            count=COUNT_STATUS,
             slave_id=slave_id,
         )
         return True, None

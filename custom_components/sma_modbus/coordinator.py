@@ -16,21 +16,18 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
-    BLOCK_FAST_POWER_COUNT,
-    BLOCK_FAST_POWER_START,
-    BLOCK_FAST_PV2_COUNT,
-    BLOCK_FAST_PV2_START,
-    BLOCK_SLOW_STATUS_COUNT,
-    BLOCK_SLOW_STATUS_START,
-    BLOCK_SLOW_TEMP_COUNT,
-    BLOCK_SLOW_TEMP_START,
-    BLOCK_SLOW_YIELD_COUNT,
-    BLOCK_SLOW_YIELD_START,
     CONF_HOST,
     CONF_PORT,
     CONF_SCAN_INTERVAL_FAST,
     CONF_SCAN_INTERVAL_SLOW,
     CONF_SLAVE_ID,
+    COUNT_DAILY_YIELD,
+    COUNT_GRID_POWER,
+    COUNT_PV_POWER_1,
+    COUNT_PV_POWER_2,
+    COUNT_STATUS,
+    COUNT_TEMPERATURE,
+    COUNT_TOTAL_YIELD,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL_FAST,
     DEFAULT_SCAN_INTERVAL_SLOW,
@@ -44,10 +41,15 @@ from .const import (
     KEY_STATUS_CODE,
     KEY_TEMPERATURE,
     KEY_TOTAL_YIELD,
+    REG_DAILY_YIELD,
+    REG_GRID_POWER,
+    REG_PV_POWER_1,
+    REG_PV_POWER_2,
+    REG_STATUS,
+    REG_TEMPERATURE,
+    REG_TOTAL_YIELD,
     SMA_S32_MAX,
     SMA_S32_NAN,
-    SMA_S64_MAX,
-    SMA_S64_NAN,
     STATUS_CODE_MAP,
     STATUS_UNKNOWN,
 )
@@ -61,10 +63,10 @@ def decode_int32(registers: list[int]) -> int:
     return struct.unpack(">i", raw)[0]
 
 
-def decode_int64(registers: list[int]) -> int:
-    """Decode four 16-bit registers as signed 64-bit big-endian integer."""
+def decode_uint64(registers: list[int]) -> int:
+    """Decode four 16-bit registers as unsigned 64-bit big-endian integer."""
     raw = struct.pack(">4H", registers[0], registers[1], registers[2], registers[3])
-    return struct.unpack(">q", raw)[0]
+    return struct.unpack(">Q", raw)[0]
 
 
 async def async_read_holding_registers(
@@ -153,119 +155,136 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         return self._client
 
-    async def _async_read_chunk(
+    async def _async_read_channel(
         self, client: AsyncModbusTcpClient, address: int, count: int
-    ) -> list[int]:
-        """Read holding registers delegating to universal helper."""
-        return await async_read_holding_registers(
-            client=client, address=address, count=count, slave_id=self.slave_id
-        )
+    ) -> list[int] | None:
+        """Read an individual Modbus data object safely."""
+        try:
+            return await async_read_holding_registers(
+                client=client, address=address, count=count, slave_id=self.slave_id
+            )
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.debug(
+                "Error reading %s registers from address %s: %s",
+                count,
+                address,
+                err,
+            )
+            return None
 
     async def _async_update_data(self) -> dict[str, Any]:
-        """Fetch all required registers using optimized chunking."""
+        """Fetch all required registers from SMA Inverter."""
         async with self._lock:
             try:
                 client = await self._async_ensure_connected()
                 data: dict[str, Any] = {}
                 now = time.monotonic()
 
-                # 1. READ SLOW REGISTERS (every 60s or on startup)
+                # Verify inverter basic responsiveness first (reading Status register)
+                status_regs = await async_read_holding_registers(
+                    client=client,
+                    address=REG_STATUS,
+                    count=COUNT_STATUS,
+                    slave_id=self.slave_id,
+                )
+
+                # 1. SLOW CYCLE (every 60s or on startup)
                 need_slow_read = (
                     self._last_slow_update == 0.0
                     or (now - self._last_slow_update) >= self.scan_interval_slow
                 )
 
                 if need_slow_read:
-                    # Status chunk (30201, count 2)
-                    status_regs = await self._async_read_chunk(
-                        client, BLOCK_SLOW_STATUS_START, BLOCK_SLOW_STATUS_COUNT
-                    )
+                    # Status (30201, count 2)
                     raw_status = decode_int32(status_regs)
                     self._cached_slow_data[KEY_STATUS_CODE] = raw_status
                     self._cached_slow_data[KEY_STATUS] = STATUS_CODE_MAP.get(
                         raw_status, STATUS_UNKNOWN
                     )
 
-                    # Yield chunk (30513..30520, count 8)
-                    yield_regs = await self._async_read_chunk(
-                        client, BLOCK_SLOW_YIELD_START, BLOCK_SLOW_YIELD_COUNT
+                    # Total Yield (30513, count 4, U64)
+                    total_yield_regs = await self._async_read_channel(
+                        client, REG_TOTAL_YIELD, COUNT_TOTAL_YIELD
                     )
-                    # Total Yield (regs 0..3)
-                    raw_total_yield = decode_int64(yield_regs[0:4])
-                    if (
-                        raw_total_yield == SMA_S64_NAN
-                        or raw_total_yield == SMA_S64_MAX
-                        or raw_total_yield < 0
-                    ):
-                        self._cached_slow_data[KEY_TOTAL_YIELD] = None
-                    else:
-                        self._cached_slow_data[KEY_TOTAL_YIELD] = round(
-                            raw_total_yield * 0.001
-                        )
+                    if total_yield_regs is not None:
+                        raw_total = decode_uint64(total_yield_regs)
+                        if raw_total in (0xFFFFFFFFFFFFFFFF, 0x8000000000000000):
+                            self._cached_slow_data[KEY_TOTAL_YIELD] = None
+                        else:
+                            self._cached_slow_data[KEY_TOTAL_YIELD] = round(
+                                raw_total * 0.001
+                            )
 
-                    # Daily Yield (regs 4..7)
-                    raw_daily_yield = decode_int64(yield_regs[4:8])
-                    if (
-                        raw_daily_yield == SMA_S64_NAN
-                        or raw_daily_yield == SMA_S64_MAX
-                        or raw_daily_yield < 0
-                    ):
-                        self._cached_slow_data[KEY_DAILY_YIELD] = None
-                    else:
-                        self._cached_slow_data[KEY_DAILY_YIELD] = round(
-                            raw_daily_yield * 0.001, 1
-                        )
-
-                    # Temperature chunk (30953, count 2)
-                    temp_regs = await self._async_read_chunk(
-                        client, BLOCK_SLOW_TEMP_START, BLOCK_SLOW_TEMP_COUNT
+                    # Daily Yield (30517, count 4, U64)
+                    daily_yield_regs = await self._async_read_channel(
+                        client, REG_DAILY_YIELD, COUNT_DAILY_YIELD
                     )
-                    raw_temp = decode_int32(temp_regs)
-                    if (
-                        raw_temp == SMA_S32_NAN
-                        or raw_temp == SMA_S32_MAX
-                    ):
-                        self._cached_slow_data[KEY_TEMPERATURE] = None
-                    else:
-                        scaled_temp = round(raw_temp * 0.1, 1)
-                        # Filter spurious readings < -100 °C as per spec
-                        self._cached_slow_data[KEY_TEMPERATURE] = (
-                            scaled_temp if scaled_temp > -100.0 else None
-                        )
+                    if daily_yield_regs is not None:
+                        raw_daily = decode_uint64(daily_yield_regs)
+                        if raw_daily in (0xFFFFFFFFFFFFFFFF, 0x8000000000000000):
+                            self._cached_slow_data[KEY_DAILY_YIELD] = None
+                        else:
+                            self._cached_slow_data[KEY_DAILY_YIELD] = round(
+                                raw_daily * 0.001, 1
+                            )
+
+                    # Temperature (30953, count 2, S32)
+                    temp_regs = await self._async_read_channel(
+                        client, REG_TEMPERATURE, COUNT_TEMPERATURE
+                    )
+                    if temp_regs is not None:
+                        raw_temp = decode_int32(temp_regs)
+                        if raw_temp in (SMA_S32_NAN, SMA_S32_MAX):
+                            self._cached_slow_data[KEY_TEMPERATURE] = None
+                        else:
+                            scaled_temp = round(raw_temp * 0.1, 1)
+                            self._cached_slow_data[KEY_TEMPERATURE] = (
+                                scaled_temp if scaled_temp > -100.0 else None
+                            )
 
                     self._last_slow_update = now
 
-                # 2. READ FAST REGISTERS (every 5s)
-                # Block 1: 30773..30776 (count 4) covers PV Power 1 & Grid Power
-                fast_power_regs = await self._async_read_chunk(
-                    client, BLOCK_FAST_POWER_START, BLOCK_FAST_POWER_COUNT
+                # 2. FAST CYCLE (every 5s)
+                # PV Power 1 (30773, count 2, S32)
+                pv1_regs = await self._async_read_channel(
+                    client, REG_PV_POWER_1, COUNT_PV_POWER_1
                 )
+                if pv1_regs is not None:
+                    raw_pv1 = decode_int32(pv1_regs)
+                    data[KEY_PV_POWER_1] = (
+                        0 if raw_pv1 in (SMA_S32_NAN, SMA_S32_MAX) or raw_pv1 < 0 else raw_pv1
+                    )
+                else:
+                    data[KEY_PV_POWER_1] = 0
 
-                # PV Power 1 (regs 0..1, addr 30773)
-                raw_pv1 = decode_int32(fast_power_regs[0:2])
-                data[KEY_PV_POWER_1] = (
-                    0 if raw_pv1 == SMA_S32_NAN or raw_pv1 < 0 else raw_pv1
+                # Grid Power (30775, count 2, S32)
+                grid_regs = await self._async_read_channel(
+                    client, REG_GRID_POWER, COUNT_GRID_POWER
                 )
+                if grid_regs is not None:
+                    raw_grid = decode_int32(grid_regs)
+                    data[KEY_GRID_POWER] = (
+                        0 if raw_grid in (SMA_S32_NAN, SMA_S32_MAX) or raw_grid < 0 else raw_grid
+                    )
+                else:
+                    data[KEY_GRID_POWER] = 0
 
-                # Grid Power (regs 2..3, addr 30775)
-                raw_grid = decode_int32(fast_power_regs[2:4])
-                data[KEY_GRID_POWER] = (
-                    0 if raw_grid == SMA_S32_NAN or raw_grid < 0 else raw_grid
+                # PV Power 2 (30961, count 2, S32)
+                pv2_regs = await self._async_read_channel(
+                    client, REG_PV_POWER_2, COUNT_PV_POWER_2
                 )
+                if pv2_regs is not None:
+                    raw_pv2 = decode_int32(pv2_regs)
+                    data[KEY_PV_POWER_2] = (
+                        0 if raw_pv2 in (SMA_S32_NAN, SMA_S32_MAX) or raw_pv2 < 0 else raw_pv2
+                    )
+                else:
+                    data[KEY_PV_POWER_2] = 0
 
-                # Block 2: 30961..30962 (count 2) covers PV Power 2
-                fast_pv2_regs = await self._async_read_chunk(
-                    client, BLOCK_FAST_PV2_START, BLOCK_FAST_PV2_COUNT
-                )
-                raw_pv2 = decode_int32(fast_pv2_regs[0:2])
-                data[KEY_PV_POWER_2] = (
-                    0 if raw_pv2 == SMA_S32_NAN or raw_pv2 < 0 else raw_pv2
-                )
-
-                # Merge cached slow data into current payload
+                # Merge cached slow data into payload
                 data.update(self._cached_slow_data)
 
-                # Connection is healthy: log recovery if it was previously reported as down
+                # Reset communication lost warning flag upon success
                 if self._connection_lost_logged:
                     _LOGGER.info(
                         "Communication re-established with SMA Inverter at %s:%s (slave %s)",
@@ -278,14 +297,12 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 return data
 
             except (ModbusException, asyncio.TimeoutError, OSError) as err:
-                # Force client reset so subsequent attempt performs a clean TCP handshake
                 if self._client is not None:
                     try:
                         self._client.close()
                     except Exception:  # pylint: disable=broad-except
                         pass
 
-                # Quiet log management during night standby
                 if not self._connection_lost_logged:
                     _LOGGER.warning(
                         "Inverter unreachable at %s:%s (slave %s). "

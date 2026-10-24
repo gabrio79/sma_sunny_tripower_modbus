@@ -63,26 +63,14 @@ REG_PV_POWER_1: Final = 30773  # int32 (2 registers)
 REG_GRID_POWER: Final = 30775  # int32 (2 registers)
 REG_PV_POWER_2: Final = 30961  # int32 (2 registers)
 
-# Contiguous block definitions for optimized chunked reads
-# Fast block 1: 30773..30776 (count 4) covers PV Power 1 and Grid Power
-BLOCK_FAST_POWER_START: Final = REG_PV_POWER_1
-BLOCK_FAST_POWER_COUNT: Final = 4
-
-# Fast block 2: 30961..30962 (count 2) covers PV Power 2
-BLOCK_FAST_PV2_START: Final = REG_PV_POWER_2
-BLOCK_FAST_PV2_COUNT: Final = 2
-
-# Slow block Status: 30201..30202 (count 2)
-BLOCK_SLOW_STATUS_START: Final = REG_STATUS
-BLOCK_SLOW_STATUS_COUNT: Final = 2
-
-# Slow block Yield: 30513..30520 (count 8) covers Total Yield and Daily Yield
-BLOCK_SLOW_YIELD_START: Final = REG_TOTAL_YIELD
-BLOCK_SLOW_YIELD_COUNT: Final = 8
-
-# Slow block Temperature: 30953..30954 (count 2)
-BLOCK_SLOW_TEMP_START: Final = REG_TEMPERATURE
-BLOCK_SLOW_TEMP_COUNT: Final = 2
+# Modbus register counts (SMA data objects are read with their exact length)
+COUNT_STATUS: Final = 2        # 30201 (S32)
+COUNT_TOTAL_YIELD: Final = 4   # 30513 (U64)
+COUNT_DAILY_YIELD: Final = 4   # 30517 (U64)
+COUNT_TEMPERATURE: Final = 2   # 30953 (S32)
+COUNT_PV_POWER_1: Final = 2    # 30773 (S32)
+COUNT_GRID_POWER: Final = 2    # 30775 (S32)
+COUNT_PV_POWER_2: Final = 2    # 30961 (S32)
 
 # SMA sentinel and NaN values
 SMA_S32_NAN: Final = -2147483648  # 0x80000000
