@@ -1,64 +1,77 @@
-# 📊 Dashboard Vettoriale per Inverter SMA Sunny Tripower
+# 📊 Custom Card All-in-One per SMA Sunny Tripower (`sma-tripower-card`)
 
-Questa guida illustra come configurare una dashboard Lovelace avanzata con **grafica vettoriale interattiva (SVG)** per monitorare in tempo reale il flusso energetico dell'inverter SMA Sunny Tripower.
+Una scheda personalizzata Lovelace completa, moderna e reattiva con **tutto integrato**: grafica vettoriale nativa SVG dell'inverter SMA, flussi di energia animati in tempo reale, display LCD digitale, LED di stato e pannello telemetria completo.
 
-<p align="center">
-  <img src="images/sma_inverter_vector.svg" alt="Schematica Vettoriale SMA Sunny Tripower" width="100%">
-</p>
+Nessun file esterno da posizionare a mano o coordinate da configurare: basta aggiungere la card!
 
 ---
 
-## ⚡ Caratteristiche
-- **Grafica Vettoriale SVG ad alta risoluzione**: scala perfettamente su smartphone, tablet e monitor da parete.
-- **Valori in Tempo Reale Sovrapposti**:
-  - Potenza DC delle stringhe MPPT (Stringhe A/B o C/D) in ingresso.
-  - Potenza AC di rete immessa in uscita.
-  - Stato operativo (OK, Spento, Attenzione, Errore) visualizzato sul display LCD centrale.
-  - Temperatura interna dell'inverter.
-  - Produzione energetica giornaliera e totale.
-- **Gauge e Indicatori di Rendimento**: indicatori a lancetta per monitorare la potenza istantanea e la temperatura con soglie di allerta cromatiche.
-- **100% Nativo**: non richiede componenti custom esterni complessi; utilizza la scheda nativa `picture-elements` di Home Assistant.
+## ✨ Caratteristiche Principali
+
+- 📐 **Schematica Vettoriale SVG Incorporata**: Disegno ad altissima risoluzione dell'inverter SMA Sunny Tripower, delle stringhe fotovoltaiche e della rete elettrica.
+- ⚡ **Flussi Energetici Dinamici Animati**: Linee di flusso a particelle pulsanti che collegano le stringhe solari all'inverter e l'inverter alla rete. L'animazione accelera all'aumentare della potenza solare e si arresta in standby.
+- 📟 **Display Digitale LCD & LED di Stato**: Display blu elettrico stile SMA con lettura istantanea e LED di stato circolare (Verde = Produzione, Arancione = Attesa/Standby, Rosso = Errore).
+- 📈 **Griglia Telemetrica Completa**:
+  - **Oggi**: Produzione giornaliera in kWh.
+  - **Totale**: Produzione storica cumulativa (in kWh o MWh).
+  - **Temperatura**: Temperatura interna del dissipatore (°C).
+  - **Rendimento**: Rendimento inverter stimato.
+- 🎛️ **Editor Visuale Integrato**: Configurazione guidata tramite l'interfaccia di Home Assistant (titolo, inverter 1 o 2, attivazione animazioni, visibilità header/statistiche).
+- 🔄 **Risoluzione Automatica Entità**: Supporta istantaneamente sia `inverter_1` che `inverter_2` senza dover mappare ogni sensore a mano.
 
 ---
 
-## 🛠️ Istruzioni di Installazione Passo-Passo
+## 🚀 Come Aggiungere la Card in Lovelace
 
-### 1. Copia l'immagine vettoriale in Home Assistant
-1. Prendi il file [`images/sma_inverter_vector.svg`](images/sma_inverter_vector.svg).
-2. Copialo nella cartella **`www`** della tua installazione di Home Assistant:
-   - Percorso: `/config/www/sma_inverter_vector.svg`
-   *(Nota: Se la cartella `www` non esiste all'interno di `config`, creala e riavvia Home Assistant affinché l'endpoint `/local/` sia attivo).*
-3. Verifica aprendo nel browser del tuo computer o telefono l'indirizzo:  
-   `http://<IP_HOME_ASSISTANT>:8123/local/sma_inverter_vector.svg` (dovrà visualizzare l'inverter).
+### Metodo 1: Risorsa Registrata Automaticamente dall'Integrazione
+L'integrazione SMA Modbus registra automaticamente l'endpoint `/sma_modbus/sma-tripower-card.js`.
 
----
-
-### 2. Aggiungi la Scheda in Lovelace
-1. Apri la tua Dashboard in **Home Assistant**.
+1. Apri la tua Dashboard in Home Assistant.
 2. Clicca sui **3 puntini in alto a destra** ➔ **Modifica Dashboard**.
-3. Clicca su **Aggiungi scheda** in basso a destra.
-4. Scorri fino in fondo e seleziona **Manuale** (scheda in formato codice YAML).
-5. Apri il file con il codice pronto [examples/lovelace_sma_dashboard.yaml](examples/lovelace_sma_dashboard.yaml), copiane il contenuto e incollalo nell'editor.
-6. Clicca su **Salva**.
+3. Clicca su **Aggiungi scheda** ➔ cerca **SMA Sunny Tripower Card** oppure scegli **Manuale** (YAML).
+4. Inserisci il seguente codice:
+
+```yaml
+type: custom:sma-tripower-card
+title: "Inverter 1 - SMA Sunny Tripower"
+inverter: "inverter_1"
+animation: true
+```
+
+Per il secondo inverter:
+```yaml
+type: custom:sma-tripower-card
+title: "Inverter 2 - SMA Sunny Tripower"
+inverter: "inverter_2"
+animation: true
+```
 
 ---
 
-### 💡 Personalizzazione per Inverter 1 vs Inverter 2
+### Metodo 2: Aggiunta Manuale Risorsa Lovelace (se necessario)
+Se Home Assistant non carica automaticamente le risorse:
+1. Vai su **Impostazioni** ➔ **Dashboard** ➔ **Risorse** (in alto a destra).
+2. Clicca **Aggiungi Risorsa**:
+   - **URL**: `/sma_modbus/sma-tripower-card.js` (oppure copia il file in `/config/www/sma-tripower-card.js` e usa `/local/sma-tripower-card.js`)
+   - **Tipo di risorsa**: `Modulo JavaScript`
+3. Salva e ricarica la pagina del browser (F5 / Ctrl+F5).
 
-A seconda di quale inverter stai visualizzando, verifica i nomi delle entità nel codice YAML:
+---
 
-- **Per Inverter 1 (Stringhe C e D)**:
-  - Stringa 1: `sensor.inverter_1_potenza_fv_c`
-  - Stringa 2: `sensor.inverter_1_potenza_fv_d`
-  - Rete: `sensor.inverter_1_potenza_di_rete`
-  - Stato: `sensor.inverter_1_stato`
-  - Resa Giorno: `sensor.inverter_1_produzione_giornaliera`
-  - Resa Totale: `sensor.inverter_1_produzione_totale`
+## ⚙️ Opzioni di Configurazione Complete
 
-- **Per Inverter 2 (Stringhe A e B)**:
-  - Stringa 1: `sensor.inverter_2_potenza_fv_a`
-  - Stringa 2: `sensor.inverter_2_potenza_fv_b`
-  - Rete: `sensor.inverter_2_potenza_di_rete`
-  - Stato: `sensor.inverter_2_stato`
-  - Resa Giorno: `sensor.inverter_2_produzione_giornaliera`
-  - Resa Totale: `sensor.inverter_2_produzione_totale`
+| Parametro | Tipo | Predefinito | Descrizione |
+|---|---|---|---|
+| `type` | string | **Obbligatorio** | `custom:sma-tripower-card` |
+| `title` | string | `SMA Sunny Tripower` | Titolo mostrato nell'intestazione |
+| `inverter` | string | `inverter_1` | Prefisso delle entità (`inverter_1` o `inverter_2`) |
+| `animation` | boolean | `true` | Abilita/disabilita le animazioni di flusso |
+| `show_header` | boolean | `true` | Mostra/nasconde l'intestazione con badge di stato |
+| `show_stats` | boolean | `true` | Mostra/nasconde i riquadri inferiori (Oggi, Totale, Temp) |
+| `grid_power_entity` | string | *auto* | Override manuale sensore potenza di rete |
+| `pv_power_1_entity` | string | *auto* | Override manuale sensore potenza Stringa 1 |
+| `pv_power_2_entity` | string | *auto* | Override manuale sensore potenza Stringa 2 |
+| `daily_yield_entity` | string | *auto* | Override manuale sensore resa giornaliera |
+| `total_yield_entity` | string | *auto* | Override manuale sensore resa totale |
+| `temperature_entity` | string | *auto* | Override manuale sensore temperatura |
+| `status_entity` | string | *auto* | Override manuale sensore stato |

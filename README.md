@@ -35,16 +35,23 @@ custom_components/sma_modbus/
 
 ---
 
-## 🎨 Dashboard Lovelace Vettoriale (SVG)
+## 🎨 Custom Card All-in-One per Lovelace (`sma-tripower-card`)
 
-È disponibile una splendida dashboard Lovelace con **schematica vettoriale interattiva (SVG)** dell'inverter SMA Sunny Tripower, con flusso di potenza in tempo reale, indicatori a lancetta e resa energetica:
+L'integrazione include una splendida **Custom Card all-in-one** per Lovelace (`type: custom:sma-tripower-card`) con:
+- **Schematica vettoriale nativa SVG** integrata direttamente nella card (nessun file esterno da copiare).
+- **Flussi energetici animati** in tempo reale tra pannelli, inverter e rete.
+- **Display LCD stile SMA**, LED di stato operativo a colori e telemetria completa (Oggi, Totale, Temperatura, Rendimento).
+- **Editor visuale integrato** e autorilevamento delle entità sia per Inverter 1 che per Inverter 2.
 
-- 📖 **[Guida completa alla configurazione della Dashboard (DASHBOARD.md)](DASHBOARD.md)**
-- 💻 **[Codice Lovelace pronto da incollare (examples/lovelace_sma_dashboard.yaml)](examples/lovelace_sma_dashboard.yaml)**
+```yaml
+type: custom:sma-tripower-card
+title: "Inverter 1 - SMA Sunny Tripower"
+inverter: "inverter_1"
+animation: true
+```
 
-<p align="center">
-  <img src="images/sma_inverter_vector.svg" alt="Schematica Vettoriale SMA Sunny Tripower" width="85%">
-</p>
+- 📖 **[Guida completa e opzioni della Custom Card (DASHBOARD.md)](DASHBOARD.md)**
+- 💻 **[Esempi Lovelace pronti all'uso (examples/lovelace_sma_dashboard.yaml)](examples/lovelace_sma_dashboard.yaml)**
 
 ---
 

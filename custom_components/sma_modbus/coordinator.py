@@ -69,41 +69,63 @@ def decode_uint64(registers: list[int]) -> int:
     return struct.unpack(">Q", raw)[0]
 
 
-async def async_read_holding_registers(
-    client: AsyncModbusTcpClient, address: int, count: int, slave_id: int
-) -> list[int]:
-    """Read holding registers handling pymodbus version compatibility (device_id, slave, unit)."""
-    response = None
+async def _async_try_read(
+    client: AsyncModbusTcpClient,
+    method,
+    address: int,
+    count: int,
+    slave_id: int,
+) -> list[int] | None:
+    """Attempt reading with a given method across all pymodbus keyword arguments."""
     for kwarg in ("device_id", "slave", "unit"):
         try:
-            response = await client.read_holding_registers(
-                address=address, count=count, **{kwarg: slave_id}
-            )
-            break
+            resp = await method(address=address, count=count, **{kwarg: slave_id})
+            if resp is not None and not resp.isError() and len(resp.registers) >= count:
+                return resp.registers
         except TypeError as err:
             if "unexpected keyword argument" in str(err):
                 continue
-            raise
+        except Exception:  # pylint: disable=broad-except
+            pass
+    return None
 
-    if response is None:
-        try:
-            response = await client.read_holding_registers(address=address, count=count)
-        except Exception as err:
-            raise ModbusException(
-                f"Modbus call failed for address {address}: {err}"
-            ) from err
 
-    if response is None or response.isError():
-        raise ModbusException(
-            f"Modbus error reading {count} registers from address {address}: {response}"
+async def async_read_holding_registers(
+    client: AsyncModbusTcpClient, address: int, count: int, slave_id: int
+) -> list[int]:
+    """Read registers trying holding (FC03) and input (FC04), and offsets if needed."""
+    # 1. Try FC03 (read_holding_registers) at address
+    regs = await _async_try_read(
+        client, client.read_holding_registers, address, count, slave_id
+    )
+    if regs is not None:
+        return regs
+
+    # 2. Try FC04 (read_input_registers) at address
+    regs = await _async_try_read(
+        client, client.read_input_registers, address, count, slave_id
+    )
+    if regs is not None:
+        return regs
+
+    # 3. Try FC03 with offset -1 (if device is 1-based)
+    if address > 0:
+        regs = await _async_try_read(
+            client, client.read_holding_registers, address - 1, count, slave_id
         )
+        if regs is not None:
+            return regs
 
-    if len(response.registers) < count:
-        raise ModbusException(
-            f"Incomplete read from address {address}: expected {count}, got {len(response.registers)}"
+        # 4. Try FC04 with offset -1
+        regs = await _async_try_read(
+            client, client.read_input_registers, address - 1, count, slave_id
         )
+        if regs is not None:
+            return regs
 
-    return response.registers
+    raise ModbusException(
+        f"Unable to read {count} registers from address {address} (slave {slave_id}) with FC03 or FC04"
+    )
 
 
 class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -160,12 +182,23 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     ) -> list[int] | None:
         """Read an individual Modbus data object safely."""
         try:
-            return await async_read_holding_registers(
+            regs = await async_read_holding_registers(
                 client=client, address=address, count=count, slave_id=self.slave_id
             )
-        except Exception as err:  # pylint: disable=broad-except
             _LOGGER.debug(
-                "Error reading %s registers from address %s: %s",
+                "SMA Inverter %s:%s - Read %s regs from %s: %s",
+                self.host,
+                self.slave_id,
+                count,
+                address,
+                regs,
+            )
+            return regs
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.warning(
+                "SMA Inverter %s:%s - Failed reading %s registers from address %s: %s",
+                self.host,
+                self.slave_id,
                 count,
                 address,
                 err,
@@ -180,14 +213,6 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 data: dict[str, Any] = {}
                 now = time.monotonic()
 
-                # Verify inverter basic responsiveness first (reading Status register)
-                status_regs = await async_read_holding_registers(
-                    client=client,
-                    address=REG_STATUS,
-                    count=COUNT_STATUS,
-                    slave_id=self.slave_id,
-                )
-
                 # 1. SLOW CYCLE (every 60s or on startup)
                 need_slow_read = (
                     self._last_slow_update == 0.0
@@ -195,12 +220,16 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
 
                 if need_slow_read:
-                    # Status (30201, count 2)
-                    raw_status = decode_int32(status_regs)
-                    self._cached_slow_data[KEY_STATUS_CODE] = raw_status
-                    self._cached_slow_data[KEY_STATUS] = STATUS_CODE_MAP.get(
-                        raw_status, STATUS_UNKNOWN
+                    # Status (30201, count 2, S32)
+                    status_regs = await self._async_read_channel(
+                        client, REG_STATUS, COUNT_STATUS
                     )
+                    if status_regs is not None:
+                        raw_status = decode_int32(status_regs)
+                        self._cached_slow_data[KEY_STATUS_CODE] = raw_status
+                        self._cached_slow_data[KEY_STATUS] = STATUS_CODE_MAP.get(
+                            raw_status, STATUS_UNKNOWN
+                        )
 
                     # Total Yield (30513, count 4, U64)
                     total_yield_regs = await self._async_read_channel(
@@ -293,6 +322,19 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         self.slave_id,
                     )
                     self._connection_lost_logged = False
+
+                _LOGGER.info(
+                    "SMA Inverter %s live data: Grid=%s W, PV1=%s W, PV2=%s W, Status=%s (code %s), Total=%s kWh, Daily=%s kWh, Temp=%s °C",
+                    self.host,
+                    data.get(KEY_GRID_POWER),
+                    data.get(KEY_PV_POWER_1),
+                    data.get(KEY_PV_POWER_2),
+                    data.get(KEY_STATUS),
+                    data.get(KEY_STATUS_CODE),
+                    data.get(KEY_TOTAL_YIELD),
+                    data.get(KEY_DAILY_YIELD),
+                    data.get(KEY_TEMPERATURE),
+                )
 
                 return data
 
