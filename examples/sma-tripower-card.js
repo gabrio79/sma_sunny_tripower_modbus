@@ -8,7 +8,7 @@
  * and integrated visual card editor.
  */
 
-const CARD_VERSION = '1.3.2';
+const CARD_VERSION = '1.3.3';
 console.info(
   `%c SMA-TRIPOWER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #D32F2F; font-weight: 700; border-radius: 3px 0 0 3px;',
@@ -93,6 +93,34 @@ class SmaTripowerCard extends HTMLElement {
   _getStateAttr(entityId, attr) {
     if (!this._hass || !this._hass.states[entityId]) return null;
     return this._hass.states[entityId].attributes?.[attr] || null;
+  }
+
+  _formatNodeTitle(rawName, fallback) {
+    const name = (rawName && String(rawName).trim()) ? String(rawName).trim() : fallback;
+
+    // Pattern 1: Parentheses, e.g. "Stringa C (Falda Ui2)"
+    const parenMatch = name.match(/^(.*?)\s*(\(.*\))\s*$/);
+    if (parenMatch && parenMatch[1]) {
+      return { line1: parenMatch[1].trim(), line2: parenMatch[2].trim() };
+    }
+
+    // Pattern 2: Separator like " - " or " / " or " : "
+    const sepMatch = name.match(/^(.*?)\s*[-/:]\s*(.+)$/);
+    if (sepMatch && sepMatch[1] && sepMatch[2]) {
+      return { line1: sepMatch[1].trim(), line2: sepMatch[2].trim() };
+    }
+
+    // Pattern 3: Long string (> 12 characters) with spaces
+    if (name.length > 12 && name.includes(' ')) {
+      const words = name.split(' ');
+      const mid = Math.ceil(words.length / 2);
+      return {
+        line1: words.slice(0, mid).join(' '),
+        line2: words.slice(mid).join(' '),
+      };
+    }
+
+    return { line1: name, line2: null };
   }
 
   updateValues() {
@@ -236,9 +264,9 @@ class SmaTripowerCard extends HTMLElement {
     const showStats = this._config.show_stats !== false;
     const isLight = (this._config.theme === 'light' || this._config.theme === 'white' || this._config.white_background === true);
 
-    // Custom string names (with fallback to default)
-    const str1Name = (this._config.string_1_name || 'Stringa 1').toUpperCase();
-    const str2Name = (this._config.string_2_name || 'Stringa 2').toUpperCase();
+    // Custom string names (formatted into primary title and optional subtitle)
+    const str1Info = this._formatNodeTitle(this._config.string_1_name, 'STRINGA 1');
+    const str2Info = this._formatNodeTitle(this._config.string_2_name, 'STRINGA 2');
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -533,14 +561,29 @@ class SmaTripowerCard extends HTMLElement {
 
         /* SVG Text Labels with explicit non-colliding anchors */
         .svg-node-title {
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 700;
-          letter-spacing: 0.6px;
+          letter-spacing: 0.5px;
           text-anchor: start !important;
           text-transform: uppercase;
         }
+        .svg-node-title-compact {
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: 0.3px;
+        }
         ha-card.theme-dark .svg-node-title { fill: #94A3B8; }
         ha-card.theme-light .svg-node-title { fill: #64748B; }
+
+        .svg-node-subtitle {
+          font-size: 8px;
+          font-weight: 700;
+          letter-spacing: 0.3px;
+          text-anchor: start !important;
+          text-transform: uppercase;
+        }
+        ha-card.theme-dark .svg-node-subtitle { fill: #64748B; }
+        ha-card.theme-light .svg-node-subtitle { fill: #94A3B8; }
 
         .svg-text-label {
           font-size: 10px;
@@ -667,45 +710,55 @@ class SmaTripowerCard extends HTMLElement {
 
             <!-- WIRE TRACKS & FLOW ANIMATIONS -->
             <!-- Wire 1: PV String 1 to Inverter -->
-            <path class="svg-wire-track" d="M 137,61 C 165,61 165,85 190,85" />
-            <path class="flow-particle-line flow-pv" d="M 137,61 C 165,61 165,85 190,85" />
+            <path class="svg-wire-track" d="M 142,60 C 168,60 168,85 190,85" />
+            <path class="flow-particle-line flow-pv" d="M 142,60 C 168,60 168,85 190,85" />
 
             <!-- Wire 2: PV String 2 to Inverter -->
-            <path class="svg-wire-track" d="M 137,181 C 165,181 165,155 190,155" />
-            <path class="flow-particle-line flow-pv" d="M 137,181 C 165,181 165,155 190,155" />
+            <path class="svg-wire-track" d="M 142,180 C 168,180 168,155 190,155" />
+            <path class="flow-particle-line flow-pv" d="M 142,180 C 168,180 168,155 190,155" />
 
             <!-- Wire 3: Inverter AC Output to Grid -->
-            <path class="svg-wire-track" d="M 350,121 C 375,121 385,121 405,121" />
-            <path class="flow-particle-line flow-grid" d="M 350,121 C 375,121 385,121 405,121" />
+            <path class="svg-wire-track" d="M 350,120 C 375,120 380,120 402,120" />
+            <path class="flow-particle-line flow-grid" d="M 350,120 C 375,120 380,120 402,120" />
 
             <!-- ============================================== -->
             <!-- LEFT NODES: SOLAR PV STRINGS                   -->
             <!-- ============================================== -->
             <!-- String 1 -->
-            <g transform="translate(15, 20)">
-              <rect class="node-rect" width="122" height="82" />
+            <g transform="translate(10, 18)">
+              <rect class="node-rect" width="132" height="84" />
               <!-- Mini solar panel icon (placed cleanly on left, 18x14) -->
-              <g transform="translate(12, 14)">
+              <g transform="translate(10, 13)">
                 <rect width="18" height="14" rx="2" fill="${isLight ? '#FEF3C7' : 'rgba(245, 158, 11, 0.2)'}" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="1.2" />
                 <line x1="9" y1="0" x2="9" y2="14" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
                 <line x1="0" y1="7" x2="18" y2="7" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
               </g>
-              <!-- Non-overlapping title label (starts after icon at x=36) -->
-              <text x="36" y="25" class="svg-node-title">${str1Name}</text>
-              <text x="61" y="60" class="svg-text-value val-pv-color val-pv1">-- W</text>
+              <!-- Non-overlapping title label (with subtitle if long or in parentheses) -->
+              ${str1Info.line2 ? `
+                <text x="33" y="19" class="svg-node-title svg-node-title-compact">${str1Info.line1}</text>
+                <text x="33" y="31" class="svg-node-subtitle">${str1Info.line2}</text>
+              ` : `
+                <text x="33" y="24" class="svg-node-title">${str1Info.line1}</text>
+              `}
+              <text x="66" y="63" class="svg-text-value val-pv-color val-pv1">-- W</text>
             </g>
 
             <!-- String 2 -->
-            <g transform="translate(15, 140)">
-              <rect class="node-rect" width="122" height="82" />
+            <g transform="translate(10, 138)">
+              <rect class="node-rect" width="132" height="84" />
               <!-- Mini solar panel icon -->
-              <g transform="translate(12, 14)">
+              <g transform="translate(10, 13)">
                 <rect width="18" height="14" rx="2" fill="${isLight ? '#FEF3C7' : 'rgba(245, 158, 11, 0.2)'}" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="1.2" />
                 <line x1="9" y1="0" x2="9" y2="14" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
                 <line x1="0" y1="7" x2="18" y2="7" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
               </g>
-              <text x="36" y="25" class="svg-node-title">${str2Name}</text>
-              <text x="61" y="60" class="svg-text-value val-pv-color val-pv2">-- W</text>
+              ${str2Info.line2 ? `
+                <text x="33" y="19" class="svg-node-title svg-node-title-compact">${str2Info.line1}</text>
+                <text x="33" y="31" class="svg-node-subtitle">${str2Info.line2}</text>
+              ` : `
+                <text x="33" y="24" class="svg-node-title">${str2Info.line1}</text>
+              `}
+              <text x="66" y="63" class="svg-text-value val-pv-color val-pv2">-- W</text>
             </g>
 
             <!-- ============================================== -->
@@ -747,17 +800,17 @@ class SmaTripowerCard extends HTMLElement {
             <!-- ============================================== -->
             <!-- RIGHT NODE: AC GRID FEED-IN                    -->
             <!-- ============================================== -->
-            <g transform="translate(405, 80)">
-              <rect class="node-rect" width="122" height="82" />
+            <g transform="translate(402, 78)">
+              <rect class="node-rect" width="126" height="84" />
               <!-- Mini Grid / Transmission Icon (18x18 cleanly on left) -->
-              <g transform="translate(12, 13)">
+              <g transform="translate(10, 13)">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="${isLight ? '#059669' : '#10B981'}">
                   <path d="M11 20H6.5q-.2 0-.35-.15t-.15-.35v-4q0-.2.15-.35T6.5 15h9q.2 0 .35.15t.15.35v4q0 .2-.15.35t-.35.15H13v3h-2v-3Zm-2.5-7-2-7h2.2l.9 3.5.9-3.5h2.2l-2 7H8.5Z"/>
                 </svg>
               </g>
               <!-- Non-overlapping title label -->
-              <text x="36" y="25" class="svg-node-title">RETE AC</text>
-              <text x="61" y="60" class="svg-text-value val-grid-color val-grid">-- W</text>
+              <text x="33" y="24" class="svg-node-title">RETE AC</text>
+              <text x="63" y="62" class="svg-text-value val-grid-color val-grid">-- W</text>
             </g>
           </svg>
         </div>
