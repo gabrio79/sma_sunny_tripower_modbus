@@ -1,0 +1,12 @@
+{
+  "domain": "sma_modbus",
+  "name": "SMA Sunny Tripower Modbus",
+  "codeowners": ["@gabrio79"],
+  "config_flow": true,
+  "documentation": "https://github.com/gabrio79/sma_sunny_tripower_modbus",
+  "integration_type": "hub",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/gabrio79/sma_sunny_tripower_modbus/issues",
+  "requirements": ["pymodbus>=3.6.0"],
+  "version": "1.0.0"
+}

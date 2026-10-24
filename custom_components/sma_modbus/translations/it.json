@@ -1,0 +1,91 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connessione SMA Sunny Tripower",
+        "description": "Configura la connessione Modbus TCP per il tuo inverter SMA.",
+        "data": {
+          "host": "Indirizzo IP / Host",
+          "port": "Porta TCP",
+          "slave_id": "ID Slave Modbus",
+          "name": "Nome Inverter",
+          "strings_label": "Etichette Stringhe MPPT"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossibile connettersi all'inverter tramite Modbus TCP.",
+      "invalid_response": "Risposta non valida ricevuta dall'inverter.",
+      "unknown": "Si è verificato un errore imprevisto."
+    },
+    "abort": {
+      "already_configured": "Questo inverter SMA è già configurato."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opzioni Inverter SMA",
+        "description": "Modifica gli intervalli di polling e le impostazioni per questo inverter.",
+        "data": {
+          "slave_id": "ID Slave Modbus",
+          "strings_label": "Etichette Stringhe MPPT",
+          "scan_interval_fast": "Intervallo polling potenza istantanea (secondi)",
+          "scan_interval_slow": "Intervallo polling produzione e stato (secondi)"
+        }
+      }
+    }
+  },
+  "selector": {
+    "strings_label": {
+      "options": {
+        "ab": "Stringhe A / B",
+        "cd": "Stringhe C / D"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "Stato",
+        "state": {
+          "ok": "OK",
+          "off": "Spento",
+          "warning": "Attenzione",
+          "error": "Errore",
+          "unknown": "Sconosciuto"
+        }
+      },
+      "grid_power": {
+        "name": "Potenza di rete"
+      },
+      "pv_power_a": {
+        "name": "Potenza FV A"
+      },
+      "pv_power_b": {
+        "name": "Potenza FV B"
+      },
+      "pv_power_c": {
+        "name": "Potenza FV C"
+      },
+      "pv_power_d": {
+        "name": "Potenza FV D"
+      },
+      "pv_power_1": {
+        "name": "Potenza FV 1"
+      },
+      "pv_power_2": {
+        "name": "Potenza FV 2"
+      },
+      "daily_yield": {
+        "name": "Produzione giornaliera"
+      },
+      "total_yield": {
+        "name": "Produzione totale"
+      },
+      "temperature": {
+        "name": "Temperatura"
+      }
+    }
+  }
+}

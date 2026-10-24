@@ -1,0 +1,130 @@
+##############################################
+#### Impianto complessivo
+##############################################
+#
+template:
+  - sensor:
+      # Potenza Fotovoltaico
+      - name: "Fotovoltaico Potenza"
+        unique_id: fotovoltaico_potenza
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: mdi:solar-power
+        state: >
+          {{
+            (
+              (states('sensor.inverter_1_grid_power') | float(0)) +
+              (states('sensor.inverter_2_grid_power') | float(0))
+            ) | round(2)
+          }}
+
+      # Energia Fotovoltaico Giornaliera
+      - name: "Produzione Fotovoltaico Giornaliera"
+        unique_id: produzione_fotovoltaico_giornaliera
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:solar-power-variant
+        state: >
+          {{
+            (
+              (states('sensor.inverter_1_daily_yield') | float(0)) +
+              (states('sensor.inverter_2_daily_yield') | float(0))
+            ) | round(2)
+          }}
+
+      # Energia Fotovoltaico Totale
+      - name: "Fotovoltaico Total Energy"
+        unique_id: fotovoltaico_energia_totale
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:solar-power-variant-outline
+        state: >
+          {{
+            (
+              (states('sensor.inverter_1_total_yield') | float(0)) +
+              (states('sensor.inverter_2_total_yield') | float(0))
+            ) | round(2)
+          }}
+
+automation:
+  - alias: "ALLARME - Inverter in stato anomalo"
+    id: "inverter_1"
+    mode: single
+    triggers:
+      - trigger: template
+        value_template: >
+          {{ states('sensor.inverter_1_status_wip') != '307' and states('sensor.inverter_1_status_wip') | length > 0 }}
+        for: "00:00:30"
+        id: inverter_1_anomalo
+      - trigger: template
+        value_template: >
+          {{ states('sensor.inverter_2_status_wip') != '307' and states('sensor.inverter_2_status_wip') | length > 0 }}
+        for: "00:00:30"
+        id: inverter_2_anomalo
+    actions:
+      - action: notify.send_message
+        target:
+          entity_id:
+            - notify.telegram_user_1
+            - notify.telegram_user_2
+        data:
+          title: "⚠️ Allarme Inverter"
+          message: >
+            {% if trigger.id == 'inverter_1_anomalo' %}
+              Inverter 1 in stato anomalo: {{ states('sensor.inverter_1_status') }}
+              Status code: {{ states('sensor.inverter_1_status_wip') }}
+            {% else %}
+              Inverter 2 in stato anomalo: {{ states('sensor.inverter_2_status') }}
+              Status code: {{ states('sensor.inverter_2_status_wip') }}
+            {% endif %}
+            
+            Controlla il sistema fotovoltaico!
+      
+      - action: shopping_list.add_item
+        data:
+          name: >
+            Controllare inverter {% if trigger.id == 'inverter_1_anomalo' %}1{% else %}2{% endif %}
+
+
+  - alias: "ALLARME - Inverter non disponibile"
+    id: "inverter_2"
+    description: "Avvisa se l'inverter 1 o l'inverter 2 sono non disponibili per più di 2 minuti"
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: sensor.inverter_1_status_wip
+        to: "unavailable"
+        for:
+          minutes: 2
+        id: inverter_1_unavailable
+      - trigger: state
+        entity_id: sensor.inverter_2_status_wip
+        to: "unavailable"
+        for:
+          minutes: 2
+        id: inverter_2_unavailable
+    actions:
+      - action: notify.send_message
+        target:
+          entity_id:
+            - notify.telegram_user_1
+        data:
+          title: "⚠️ Allarme Inverter"
+          message: >
+            {% if trigger.id == 'inverter_1_unavailable' %}
+              Il sensore inverter_1_status_wip è non disponibile da oltre 2 minuti!
+            {% elif trigger.id == 'inverter_2_unavailable' %}
+              Il sensore inverter_2_status_wip è non disponibile da oltre 2 minuti!
+            {% else %}
+              Un sensore inverter è non disponibile.
+            {% endif %}
+            
+            Verifica la connessione Modbus con l'inverter.
+      
+      - action: shopping_list.add_item
+        data:
+          name: >
+            Controllare connessione {% if trigger.id == 'inverter_1_unavailable' %}Inverter 1{% else %}Inverter 2{% endif %}

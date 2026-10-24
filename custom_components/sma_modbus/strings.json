@@ -1,0 +1,91 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to SMA Sunny Tripower",
+        "description": "Configure the Modbus TCP connection for your SMA inverter.",
+        "data": {
+          "host": "Host / IP Address",
+          "port": "Port",
+          "slave_id": "Modbus Slave Unit ID",
+          "name": "Inverter Name",
+          "strings_label": "MPPT String Labels"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the inverter via Modbus TCP.",
+      "invalid_response": "Received invalid response from the inverter.",
+      "unknown": "Unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This SMA inverter is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "SMA Inverter Options",
+        "description": "Adjust polling intervals and configuration for this inverter.",
+        "data": {
+          "slave_id": "Modbus Slave Unit ID",
+          "strings_label": "MPPT String Labels",
+          "scan_interval_fast": "Instant Power Polling Interval (seconds)",
+          "scan_interval_slow": "Yield & Status Polling Interval (seconds)"
+        }
+      }
+    }
+  },
+  "selector": {
+    "strings_label": {
+      "options": {
+        "ab": "Strings A / B",
+        "cd": "Strings C / D"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "Status",
+        "state": {
+          "ok": "OK",
+          "off": "Off",
+          "warning": "Warning",
+          "error": "Error",
+          "unknown": "Unknown"
+        }
+      },
+      "grid_power": {
+        "name": "Grid Power"
+      },
+      "pv_power_a": {
+        "name": "PV Power A"
+      },
+      "pv_power_b": {
+        "name": "PV Power B"
+      },
+      "pv_power_c": {
+        "name": "PV Power C"
+      },
+      "pv_power_d": {
+        "name": "PV Power D"
+      },
+      "pv_power_1": {
+        "name": "PV Power 1"
+      },
+      "pv_power_2": {
+        "name": "PV Power 2"
+      },
+      "daily_yield": {
+        "name": "Daily Yield"
+      },
+      "total_yield": {
+        "name": "Total Yield"
+      },
+      "temperature": {
+        "name": "Temperature"
+      }
+    }
+  }
+}

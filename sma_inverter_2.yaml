@@ -1,0 +1,150 @@
+##############################################
+#### Inverter 2
+##############################################
+
+modbus:
+  - name: SMA Inverter 2
+    type: tcp
+    host: 192.168.50.12
+    port: 502
+    sensors:
+      - name: inverter_2_status_wip
+        slave: 3
+        address: 30201
+        scan_interval: 60
+        data_type: int32
+
+      - name: Inverter 2 Daily Yield
+        slave: 3
+        address: 30517
+        data_type: int64
+        scan_interval: 60
+        scale: 0.001
+        precision: 1
+        unit_of_measurement: kWh
+        device_class: energy
+        state_class: total
+
+      - name: inverter_2_grid_power_wip
+        slave: 3
+        address: 30775
+        data_type: int32
+        scan_interval: 5
+        precision: 1
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+
+      - name: Inverter 2 Total Yield
+        slave: 3
+        address: 30513
+        data_type: int64
+        scan_interval: 60
+        scale: 0.001
+        precision: 0
+        unit_of_measurement: kWh
+        device_class: energy
+        state_class: total_increasing
+
+      - name: inverter_2_temperature_wip
+        slave: 3
+        address: 30953
+        data_type: int32
+        scan_interval: 60
+        scale: 0.1
+        precision: 1
+        unit_of_measurement: °C
+        device_class: temperature
+        state_class: measurement
+
+      - name: inverter_2_pv_power_a_wip
+        slave: 3
+        address: 30773
+        data_type: int32
+        scan_interval: 5
+        precision: 1
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+
+      - name: inverter_2_pv_power_b_wip
+        slave: 3
+        address: 30961
+        data_type: int32
+        scan_interval: 5
+        precision: 1
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+
+##############################################
+#### Sensori che annullano mancato invio quando la produzione è nulla ed inverter va in standby
+##############################################
+
+template:
+  - sensor:
+      # Inverter 2 Potenza
+      - name: "Inverter 2 grid Power"
+        unique_id: inverter_2_grid_power
+        icon: mdi:solar-power
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        availability: >
+          {{ states('sensor.inverter_2_grid_power_wip') not in ['unknown', 'unavailable', 'none'] }}
+        state: >
+          {{ [0, states('sensor.inverter_2_grid_power_wip') | int(0)] | max }}
+
+      # Inverter 2 Temperatura
+      - name: "Inverter 2 Temperature"
+        unique_id: inverter_2_temperature
+        icon: mdi:thermometer
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        availability: >
+          {{ states('sensor.inverter_2_temperature_wip') not in ['unknown', 'unavailable', 'none'] }}
+        state: >
+          {% set temp = states('sensor.inverter_2_temperature_wip') | float(0) %}
+          {{ temp if temp > -100 else 0 }}
+
+      # Inverter 2 PV Power C
+      - name: "Inverter 2 PV Power A"
+        unique_id: inverter_2_pv_power_a
+        icon: mdi:solar-power
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        availability: >
+          {{ states('sensor.inverter_2_pv_power_a_wip') not in ['unknown', 'unavailable', 'none'] }}
+        state: >
+          {{ [0, states('sensor.inverter_2_pv_power_a_wip') | int(0)] | max }}
+
+      # Inverter 2 PV Power D
+      - name: "Inverter 2 PV Power B"
+        unique_id: inverter_2_pv_power_b
+        icon: mdi:solar-power
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        availability: >
+          {{ states('sensor.inverter_2_pv_power_b_wip') not in ['unknown', 'unavailable', 'none'] }}
+        state: >
+          {{ [0, states('sensor.inverter_2_pv_power_b_wip') | int(0)] | max }}
+
+      # Inverter 2 Stato
+      - name: "Inverter 2 Status"
+        unique_id: inverter_2_status
+        icon: mdi:information-outline
+        state: >
+          {% if is_state('sensor.inverter_2_status_wip', '307') %}
+            OK
+          {% elif is_state('sensor.inverter_2_status_wip', '303') %}
+            Spento
+          {% elif is_state('sensor.inverter_2_status_wip', '455') %}
+            Attenzione
+          {% elif is_state('sensor.inverter_2_status_wip', '35') %}
+            Errore
+          {% else %}
+            Sconosciuto
+          {% endif %}
