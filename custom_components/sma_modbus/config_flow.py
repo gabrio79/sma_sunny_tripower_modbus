@@ -152,35 +152,39 @@ class SmaModbusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class SmaModbusOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow for SMA Sunny Tripower Modbus integration."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+    def __init__(self, config_entry: config_entries.ConfigEntry | None = None) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
+        self._entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage the options."""
+        entry = getattr(self, "config_entry", None) or self._entry
+        if entry is None:
+            return self.async_abort(reason="unknown")
+
         if user_input is not None:
             # If strings_label or slave_id changed, also synchronize with entry.data
-            updated_data = dict(self.config_entry.data)
+            updated_data = dict(entry.data)
             if CONF_STRINGS_LABEL in user_input:
                 updated_data[CONF_STRINGS_LABEL] = user_input[CONF_STRINGS_LABEL]
             if CONF_SLAVE_ID in user_input:
                 updated_data[CONF_SLAVE_ID] = user_input[CONF_SLAVE_ID]
 
             self.hass.config_entries.async_update_entry(
-                self.config_entry, data=updated_data
+                entry, data=updated_data
             )
             return self.async_create_entry(title="", data=user_input)
 
-        current_label = self.config_entry.data.get(
+        current_label = entry.data.get(
             CONF_STRINGS_LABEL, DEFAULT_STRINGS_LABEL
         )
-        current_slave = self.config_entry.data.get(CONF_SLAVE_ID, DEFAULT_SLAVE_ID)
-        current_fast = self.config_entry.options.get(
+        current_slave = entry.data.get(CONF_SLAVE_ID, DEFAULT_SLAVE_ID)
+        current_fast = entry.options.get(
             CONF_SCAN_INTERVAL_FAST, DEFAULT_SCAN_INTERVAL_FAST
         )
-        current_slow = self.config_entry.options.get(
+        current_slow = entry.options.get(
             CONF_SCAN_INTERVAL_SLOW, DEFAULT_SCAN_INTERVAL_SLOW
         )
 
