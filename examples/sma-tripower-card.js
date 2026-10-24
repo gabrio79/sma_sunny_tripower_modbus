@@ -8,7 +8,7 @@
  * and integrated visual card editor.
  */
 
-const CARD_VERSION = '1.3.0';
+const CARD_VERSION = '1.3.2';
 console.info(
   `%c SMA-TRIPOWER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #D32F2F; font-weight: 700; border-radius: 3px 0 0 3px;',
@@ -943,16 +943,22 @@ class SmaTripowerCardEditor extends HTMLElement {
   }
 }
 
-// Register Custom Elements
-customElements.define('sma-tripower-card', SmaTripowerCard);
-customElements.define('sma-tripower-card-editor', SmaTripowerCardEditor);
+// Register Custom Elements safely
+if (!customElements.get('sma-tripower-card')) {
+  customElements.define('sma-tripower-card', SmaTripowerCard);
+}
+if (!customElements.get('sma-tripower-card-editor')) {
+  customElements.define('sma-tripower-card-editor', SmaTripowerCardEditor);
+}
 
 // Register in Lovelace Custom Cards Picker
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: 'sma-tripower-card',
-  name: 'SMA Sunny Tripower Card',
-  description: 'Card all-in-one con schematica vettoriale integrata, animazioni di flusso e telemetria per inverter SMA.',
-  preview: true,
-  documentationURL: 'https://github.com/gabrio79/sma_sunny_tripower_modbus',
-});
+if (!window.customCards.some(card => card.type === 'sma-tripower-card')) {
+  window.customCards.push({
+    type: 'sma-tripower-card',
+    name: 'SMA Sunny Tripower Card',
+    description: 'Card all-in-one con schematica vettoriale integrata, animazioni di flusso e telemetria per inverter SMA.',
+    preview: true,
+    documentationURL: 'https://github.com/gabrio79/sma_sunny_tripower_modbus',
+  });
+}
