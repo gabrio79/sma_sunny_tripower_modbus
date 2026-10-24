@@ -4,10 +4,11 @@
  * 
  * Standalone, zero-dependency Lovelace card for Home Assistant.
  * Fully embedded vector schematic, animated energy flows, live telemetry tiles,
- * dual theme support (Dark Glassmorphic & White/Light Clean), and integrated card editor.
+ * dual theme support (Dark Glassmorphic & Clean White/Light), custom string names,
+ * and integrated visual card editor.
  */
 
-const CARD_VERSION = '1.2.0';
+const CARD_VERSION = '1.3.0';
 console.info(
   `%c SMA-TRIPOWER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #D32F2F; font-weight: 700; border-radius: 3px 0 0 3px;',
@@ -29,6 +30,8 @@ class SmaTripowerCard extends HTMLElement {
       inverter: 'inverter_1',
       animation: true,
       theme: 'dark',
+      string_1_name: 'Stringa 1',
+      string_2_name: 'Stringa 2',
     };
   }
 
@@ -44,6 +47,8 @@ class SmaTripowerCard extends HTMLElement {
       animation: true,
       theme: 'dark',
       white_background: false,
+      string_1_name: '',
+      string_2_name: '',
       show_header: true,
       show_stats: true,
     }, config);
@@ -128,7 +133,6 @@ class SmaTripowerCard extends HTMLElement {
 
     // Status mapping & badges
     const rawStatus = String(this._getState(statusId, 'unknown')).toLowerCase();
-    const statusCode = this._getStateAttr(statusId, 'status_code');
     
     let statusLabel = 'OK';
     let statusBadgeClass = 'status-ok';
@@ -230,7 +234,11 @@ class SmaTripowerCard extends HTMLElement {
     const title = this._config.title || 'SMA Sunny Tripower';
     const showHeader = this._config.show_header !== false;
     const showStats = this._config.show_stats !== false;
-    const isLight = (this._config.theme === 'light' || this._config.white_background === true);
+    const isLight = (this._config.theme === 'light' || this._config.theme === 'white' || this._config.white_background === true);
+
+    // Custom string names (with fallback to default)
+    const str1Name = (this._config.string_1_name || 'Stringa 1').toUpperCase();
+    const str2Name = (this._config.string_2_name || 'Stringa 2').toUpperCase();
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -289,10 +297,10 @@ class SmaTripowerCard extends HTMLElement {
 
         /* WHITE / LIGHT THEME */
         ha-card.theme-light {
-          background: linear-gradient(155deg, #FFFFFF 0%, #F8FAFC 100%);
-          border: 1px solid rgba(203, 213, 225, 0.85);
+          background: #FFFFFF;
+          border: 1px solid rgba(226, 232, 240, 0.95);
           color: #0F172A;
-          box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1);
+          box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.06), inset 0 1px 0 #FFFFFF;
         }
 
         ha-card.theme-light::before {
@@ -302,7 +310,7 @@ class SmaTripowerCard extends HTMLElement {
           left: -40px;
           width: 220px;
           height: 220px;
-          background: radial-gradient(circle, rgba(245, 158, 11, 0.16) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, transparent 70%);
           pointer-events: none;
         }
 
@@ -313,7 +321,7 @@ class SmaTripowerCard extends HTMLElement {
           right: -40px;
           width: 240px;
           height: 240px;
-          background: radial-gradient(circle, rgba(16, 185, 129, 0.16) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%);
           pointer-events: none;
         }
 
@@ -421,8 +429,8 @@ class SmaTripowerCard extends HTMLElement {
         }
 
         ha-card.theme-light .schematic-wrapper {
-          background: rgba(241, 245, 249, 0.85);
-          border: 1px solid rgba(203, 213, 225, 0.9);
+          background: #F8FAFC;
+          border: 1px solid #E2E8F0;
         }
 
         svg.schematic-svg {
@@ -437,16 +445,16 @@ class SmaTripowerCard extends HTMLElement {
           fill: #0F172A;
           stroke: #334155;
           stroke-width: 1.5;
-          rx: 10px;
+          rx: 12px;
           filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
         }
 
         ha-card.theme-light .node-rect {
           fill: #FFFFFF;
-          stroke: #CBD5E1;
+          stroke: #E2E8F0;
           stroke-width: 1.5;
-          rx: 10px;
-          filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.06));
+          rx: 12px;
+          filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.04));
         }
 
         ha-card.theme-dark .svg-wire-track {
@@ -458,7 +466,7 @@ class SmaTripowerCard extends HTMLElement {
 
         ha-card.theme-light .svg-wire-track {
           fill: none;
-          stroke: #CBD5E1;
+          stroke: #E2E8F0;
           stroke-width: 4;
           stroke-linecap: round;
         }
@@ -510,10 +518,10 @@ class SmaTripowerCard extends HTMLElement {
 
         ha-card.theme-light .inverter-body {
           fill: url(#invGradientLight);
-          stroke: #94A3B8;
+          stroke: #CBD5E1;
           stroke-width: 2;
           rx: 14px;
-          filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.12));
+          filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.08));
         }
 
         .inverter-lcd {
@@ -523,6 +531,17 @@ class SmaTripowerCard extends HTMLElement {
           rx: 6px;
         }
 
+        /* SVG Text Labels with explicit non-colliding anchors */
+        .svg-node-title {
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.6px;
+          text-anchor: start !important;
+          text-transform: uppercase;
+        }
+        ha-card.theme-dark .svg-node-title { fill: #94A3B8; }
+        ha-card.theme-light .svg-node-title { fill: #64748B; }
+
         .svg-text-label {
           font-size: 10px;
           font-weight: 700;
@@ -530,7 +549,6 @@ class SmaTripowerCard extends HTMLElement {
           text-anchor: middle;
           text-transform: uppercase;
         }
-
         ha-card.theme-dark .svg-text-label { fill: #94A3B8; }
         ha-card.theme-light .svg-text-label { fill: #64748B; }
 
@@ -574,8 +592,8 @@ class SmaTripowerCard extends HTMLElement {
 
         ha-card.theme-light .tile {
           background: #FFFFFF;
-          border: 1px solid rgba(226, 232, 240, 0.9);
-          box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
+          border: 1px solid #E2E8F0;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
         }
 
         .tile:hover {
@@ -642,56 +660,52 @@ class SmaTripowerCard extends HTMLElement {
               <!-- Inverter Light Gradient -->
               <linearGradient id="invGradientLight" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stop-color="#FFFFFF" />
-                <stop offset="50%" stop-color="#F1F5F9" />
+                <stop offset="50%" stop-color="#F8FAFC" />
                 <stop offset="100%" stop-color="#E2E8F0" />
               </linearGradient>
-
-              <!-- Solar Panel Pattern -->
-              <pattern id="solarGrid" width="6" height="6" patternUnits="userSpaceOnUse">
-                <rect width="6" height="6" fill="${isLight ? '#F8FAFC' : '#0F172A'}" stroke="${isLight ? '#E2E8F0' : '#1E293B'}" stroke-width="0.8"/>
-              </pattern>
             </defs>
 
             <!-- WIRE TRACKS & FLOW ANIMATIONS -->
             <!-- Wire 1: PV String 1 to Inverter -->
-            <path class="svg-wire-track" d="M 125,60 C 160,60 160,85 190,85" />
-            <path class="flow-particle-line flow-pv" d="M 125,60 C 160,60 160,85 190,85" />
+            <path class="svg-wire-track" d="M 137,61 C 165,61 165,85 190,85" />
+            <path class="flow-particle-line flow-pv" d="M 137,61 C 165,61 165,85 190,85" />
 
             <!-- Wire 2: PV String 2 to Inverter -->
-            <path class="svg-wire-track" d="M 125,180 C 160,180 160,155 190,155" />
-            <path class="flow-particle-line flow-pv" d="M 125,180 C 160,180 160,155 190,155" />
+            <path class="svg-wire-track" d="M 137,181 C 165,181 165,155 190,155" />
+            <path class="flow-particle-line flow-pv" d="M 137,181 C 165,181 165,155 190,155" />
 
             <!-- Wire 3: Inverter AC Output to Grid -->
-            <path class="svg-wire-track" d="M 350,120 C 375,120 385,120 415,120" />
-            <path class="flow-particle-line flow-grid" d="M 350,120 C 375,120 385,120 415,120" />
+            <path class="svg-wire-track" d="M 350,121 C 375,121 385,121 405,121" />
+            <path class="flow-particle-line flow-grid" d="M 350,121 C 375,121 385,121 405,121" />
 
             <!-- ============================================== -->
             <!-- LEFT NODES: SOLAR PV STRINGS                   -->
             <!-- ============================================== -->
             <!-- String 1 -->
             <g transform="translate(15, 20)">
-              <rect class="node-rect" width="110" height="80" />
-              <!-- Mini solar panel icon -->
-              <g transform="translate(12, 12)">
-                <rect width="22" height="16" fill="url(#solarGrid)" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="1.2" rx="2" />
-                <line x1="11" y1="0" x2="11" y2="16" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
-                <line x1="0" y1="8" x2="22" y2="8" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
+              <rect class="node-rect" width="122" height="82" />
+              <!-- Mini solar panel icon (placed cleanly on left, 18x14) -->
+              <g transform="translate(12, 14)">
+                <rect width="18" height="14" rx="2" fill="${isLight ? '#FEF3C7' : 'rgba(245, 158, 11, 0.2)'}" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="1.2" />
+                <line x1="9" y1="0" x2="9" y2="14" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
+                <line x1="0" y1="7" x2="18" y2="7" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
               </g>
-              <text x="42" y="24" class="svg-text-label" text-anchor="start">STRINGA 1</text>
-              <text x="55" y="58" class="svg-text-value val-pv-color val-pv1">-- W</text>
+              <!-- Non-overlapping title label (starts after icon at x=36) -->
+              <text x="36" y="25" class="svg-node-title">${str1Name}</text>
+              <text x="61" y="60" class="svg-text-value val-pv-color val-pv1">-- W</text>
             </g>
 
             <!-- String 2 -->
             <g transform="translate(15, 140)">
-              <rect class="node-rect" width="110" height="80" />
+              <rect class="node-rect" width="122" height="82" />
               <!-- Mini solar panel icon -->
-              <g transform="translate(12, 12)">
-                <rect width="22" height="16" fill="url(#solarGrid)" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="1.2" rx="2" />
-                <line x1="11" y1="0" x2="11" y2="16" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
-                <line x1="0" y1="8" x2="22" y2="8" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
+              <g transform="translate(12, 14)">
+                <rect width="18" height="14" rx="2" fill="${isLight ? '#FEF3C7' : 'rgba(245, 158, 11, 0.2)'}" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="1.2" />
+                <line x1="9" y1="0" x2="9" y2="14" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
+                <line x1="0" y1="7" x2="18" y2="7" stroke="${isLight ? '#D97706' : '#F59E0B'}" stroke-width="0.8" />
               </g>
-              <text x="42" y="24" class="svg-text-label" text-anchor="start">STRINGA 2</text>
-              <text x="55" y="58" class="svg-text-value val-pv-color val-pv2">-- W</text>
+              <text x="36" y="25" class="svg-node-title">${str2Name}</text>
+              <text x="61" y="60" class="svg-text-value val-pv-color val-pv2">-- W</text>
             </g>
 
             <!-- ============================================== -->
@@ -702,7 +716,7 @@ class SmaTripowerCard extends HTMLElement {
               <rect class="inverter-body" width="160" height="210" />
 
               <!-- Top Styling Bar -->
-              <rect x="50" y="8" width="60" height="3" fill="${isLight ? '#94A3B8' : '#475569'}" rx="1.5" />
+              <rect x="50" y="8" width="60" height="3" fill="${isLight ? '#CBD5E1' : '#475569'}" rx="1.5" />
 
               <!-- Brand Label inside Inverter -->
               <rect x="18" y="20" width="34" height="15" fill="#DC2626" rx="3" />
@@ -733,16 +747,17 @@ class SmaTripowerCard extends HTMLElement {
             <!-- ============================================== -->
             <!-- RIGHT NODE: AC GRID FEED-IN                    -->
             <!-- ============================================== -->
-            <g transform="translate(415, 80)">
-              <rect class="node-rect" width="110" height="80" />
-              <!-- Mini Grid / Transmission Icon -->
-              <g transform="translate(12, 12)">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="${isLight ? '#059669' : '#10B981'}">
+            <g transform="translate(405, 80)">
+              <rect class="node-rect" width="122" height="82" />
+              <!-- Mini Grid / Transmission Icon (18x18 cleanly on left) -->
+              <g transform="translate(12, 13)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="${isLight ? '#059669' : '#10B981'}">
                   <path d="M11 20H6.5q-.2 0-.35-.15t-.15-.35v-4q0-.2.15-.35T6.5 15h9q.2 0 .35.15t.15.35v4q0 .2-.15.35t-.35.15H13v3h-2v-3Zm-2.5-7-2-7h2.2l.9 3.5.9-3.5h2.2l-2 7H8.5Z"/>
                 </svg>
               </g>
-              <text x="38" y="24" class="svg-text-label" text-anchor="start">RETE AC</text>
-              <text x="55" y="58" class="svg-text-value val-grid-color val-grid">-- W</text>
+              <!-- Non-overlapping title label -->
+              <text x="36" y="25" class="svg-node-title">RETE AC</text>
+              <text x="61" y="60" class="svg-text-value val-grid-color val-grid">-- W</text>
             </g>
           </svg>
         </div>
@@ -834,7 +849,9 @@ class SmaTripowerCardEditor extends HTMLElement {
     const title = this._config.title || 'SMA Sunny Tripower';
     const inverter = this._config.inverter || 'inverter_1';
     const animation = this._config.animation !== false;
-    const theme = (this._config.theme === 'light' || this._config.white_background === true) ? 'light' : 'dark';
+    const theme = (this._config.theme === 'light' || this._config.theme === 'white' || this._config.white_background === true) ? 'light' : 'dark';
+    const str1Name = this._config.string_1_name || '';
+    const str2Name = this._config.string_2_name || '';
     const showHeader = this._config.show_header !== false;
     const showStats = this._config.show_stats !== false;
 
@@ -890,6 +907,16 @@ class SmaTripowerCardEditor extends HTMLElement {
             <option value="dark" ${theme === 'dark' ? 'selected' : ''}>Scuro (Dark Modern Glass)</option>
             <option value="light" ${theme === 'light' ? 'selected' : ''}>Bianco / Chiaro (Light Mode)</option>
           </select>
+        </div>
+
+        <div class="form-row">
+          <label>Nome Personalizzato Stringa 1</label>
+          <input class="form-input" type="text" data-key="string_1_name" placeholder="es. Stringa C, Falda Sud (default: Stringa 1)" value="${str1Name}" />
+        </div>
+
+        <div class="form-row">
+          <label>Nome Personalizzato Stringa 2</label>
+          <input class="form-input" type="text" data-key="string_2_name" placeholder="es. Stringa D, Falda Ovest (default: Stringa 2)" value="${str2Name}" />
         </div>
 
         <div class="checkbox-row">

@@ -11,6 +11,8 @@ CONF_PORT: Final = "port"
 CONF_SLAVE_ID: Final = "slave_id"
 CONF_NAME: Final = "name"
 CONF_STRINGS_LABEL: Final = "strings_label"
+CONF_STRING_1_NAME: Final = "string_1_name"
+CONF_STRING_2_NAME: Final = "string_2_name"
 CONF_SCAN_INTERVAL_FAST: Final = "scan_interval_fast"
 CONF_SCAN_INTERVAL_SLOW: Final = "scan_interval_slow"
 

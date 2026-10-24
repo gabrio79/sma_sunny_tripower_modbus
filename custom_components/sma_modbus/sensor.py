@@ -22,6 +22,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     CONF_STRINGS_LABEL,
+    CONF_STRING_1_NAME,
+    CONF_STRING_2_NAME,
     DEFAULT_STRINGS_LABEL,
     DOMAIN,
     KEY_DAILY_YIELD,
@@ -161,6 +163,16 @@ class SmaModbusSensor(CoordinatorEntity[SmaModbusCoordinator], SensorEntity):
             manufacturer="SMA",
             model="Sunny Tripower",
         )
+
+        # Custom name override for MPPT strings if configured
+        custom_name = None
+        if description.key == KEY_PV_POWER_1:
+            custom_name = entry.options.get(CONF_STRING_1_NAME) or entry.data.get(CONF_STRING_1_NAME)
+        elif description.key == KEY_PV_POWER_2:
+            custom_name = entry.options.get(CONF_STRING_2_NAME) or entry.data.get(CONF_STRING_2_NAME)
+
+        if custom_name:
+            self._attr_name = custom_name
 
     @property
     def native_value(self) -> Any:

@@ -9,7 +9,9 @@
           "port": "Porta TCP",
           "slave_id": "ID Slave Modbus",
           "name": "Nome Inverter",
-          "strings_label": "Etichette Stringhe MPPT"
+          "strings_label": "Etichette Stringhe MPPT",
+          "string_1_name": "Nome Stringa 1 (opzionale)",
+          "string_2_name": "Nome Stringa 2 (opzionale)"
         }
       }
     },
@@ -30,6 +32,8 @@
         "data": {
           "slave_id": "ID Slave Modbus",
           "strings_label": "Etichette Stringhe MPPT",
+          "string_1_name": "Nome Personalizzato Stringa 1",
+          "string_2_name": "Nome Personalizzato Stringa 2",
           "scan_interval_fast": "Intervallo polling potenza istantanea (secondi)",
           "scan_interval_slow": "Intervallo polling produzione e stato (secondi)"
         }

@@ -70,6 +70,8 @@ Se Home Assistant non carica automaticamente le risorse:
 | `animation` | boolean | `true` | Abilita/disabilita le animazioni di flusso |
 | `show_header` | boolean | `true` | Mostra/nasconde l'intestazione con badge di stato |
 | `show_stats` | boolean | `true` | Mostra/nasconde i riquadri inferiori (Oggi, Totale, Temp) |
+| `string_1_name` | string | `STRINGA 1` | Nome/etichetta personalizzata per la prima stringa (es. `Stringa C`, `Falda Sud`) |
+| `string_2_name` | string | `STRINGA 2` | Nome/etichetta personalizzata per la seconda stringa (es. `Stringa D`, `Falda Ovest`) |
 | `grid_power_entity` | string | *auto* | Override manuale sensore potenza di rete |
 | `pv_power_1_entity` | string | *auto* | Override manuale sensore potenza Stringa 1 |
 | `pv_power_2_entity` | string | *auto* | Override manuale sensore potenza Stringa 2 |
@@ -77,3 +79,15 @@ Se Home Assistant non carica automaticamente le risorse:
 | `total_yield_entity` | string | *auto* | Override manuale sensore resa totale |
 | `temperature_entity` | string | *auto* | Override manuale sensore temperatura |
 | `status_entity` | string | *auto* | Override manuale sensore stato |
+
+### Esempio con Sfondo Bianco e Nomi Stringhe Personalizzati
+```yaml
+type: custom:sma-tripower-card
+title: "Inverter 1 - SMA Sunny Tripower"
+inverter: "inverter_1"
+theme: light
+string_1_name: "Stringa C (Falda Sud)"
+string_2_name: "Stringa D (Falda Ovest)"
+animation: true
+```
+

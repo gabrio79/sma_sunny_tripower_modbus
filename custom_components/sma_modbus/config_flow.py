@@ -27,6 +27,8 @@ from .const import (
     CONF_SCAN_INTERVAL_SLOW,
     CONF_SLAVE_ID,
     CONF_STRINGS_LABEL,
+    CONF_STRING_1_NAME,
+    CONF_STRING_2_NAME,
     COUNT_STATUS,
     DEFAULT_NAME,
     DEFAULT_PORT,
@@ -131,6 +133,8 @@ class SmaModbusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         mode=SelectSelectorMode.DROPDOWN,
                     )
                 ),
+                vol.Optional(CONF_STRING_1_NAME): cv.string,
+                vol.Optional(CONF_STRING_2_NAME): cv.string,
             }
         )
 
@@ -165,12 +169,11 @@ class SmaModbusOptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_abort(reason="unknown")
 
         if user_input is not None:
-            # If strings_label or slave_id changed, also synchronize with entry.data
+            # If strings_label, slave_id, or custom string names changed, also synchronize with entry.data
             updated_data = dict(entry.data)
-            if CONF_STRINGS_LABEL in user_input:
-                updated_data[CONF_STRINGS_LABEL] = user_input[CONF_STRINGS_LABEL]
-            if CONF_SLAVE_ID in user_input:
-                updated_data[CONF_SLAVE_ID] = user_input[CONF_SLAVE_ID]
+            for k in (CONF_STRINGS_LABEL, CONF_SLAVE_ID, CONF_STRING_1_NAME, CONF_STRING_2_NAME):
+                if k in user_input:
+                    updated_data[k] = user_input[k]
 
             self.hass.config_entries.async_update_entry(
                 entry, data=updated_data
@@ -181,6 +184,12 @@ class SmaModbusOptionsFlowHandler(config_entries.OptionsFlow):
             CONF_STRINGS_LABEL, DEFAULT_STRINGS_LABEL
         )
         current_slave = entry.data.get(CONF_SLAVE_ID, DEFAULT_SLAVE_ID)
+        current_str1 = entry.options.get(
+            CONF_STRING_1_NAME, entry.data.get(CONF_STRING_1_NAME, "")
+        )
+        current_str2 = entry.options.get(
+            CONF_STRING_2_NAME, entry.data.get(CONF_STRING_2_NAME, "")
+        )
         current_fast = entry.options.get(
             CONF_SCAN_INTERVAL_FAST, DEFAULT_SCAN_INTERVAL_FAST
         )
@@ -188,25 +197,30 @@ class SmaModbusOptionsFlowHandler(config_entries.OptionsFlow):
             CONF_SCAN_INTERVAL_SLOW, DEFAULT_SCAN_INTERVAL_SLOW
         )
 
-        schema = vol.Schema(
-            {
-                vol.Optional(CONF_SLAVE_ID, default=current_slave): cv.positive_int,
-                vol.Optional(
-                    CONF_STRINGS_LABEL, default=current_label
-                ): SelectSelector(
-                    SelectSelectorConfig(
-                        options=STRINGS_LABEL_OPTIONS,
-                        translation_key="strings_label",
-                        mode=SelectSelectorMode.DROPDOWN,
-                    )
-                ),
-                vol.Optional(
-                    CONF_SCAN_INTERVAL_FAST, default=current_fast
-                ): cv.positive_int,
-                vol.Optional(
-                    CONF_SCAN_INTERVAL_SLOW, default=current_slow
-                ): cv.positive_int,
-            }
-        )
+        schema_dict = {
+            vol.Optional(CONF_SLAVE_ID, default=current_slave): cv.positive_int,
+            vol.Optional(
+                CONF_STRINGS_LABEL, default=current_label
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=STRINGS_LABEL_OPTIONS,
+                    translation_key="strings_label",
+                    mode=SelectSelectorMode.DROPDOWN,
+                )
+            ),
+        }
 
-        return self.async_show_form(step_id="init", data_schema=schema)
+        if current_str1:
+            schema_dict[vol.Optional(CONF_STRING_1_NAME, default=current_str1)] = cv.string
+        else:
+            schema_dict[vol.Optional(CONF_STRING_1_NAME)] = cv.string
+
+        if current_str2:
+            schema_dict[vol.Optional(CONF_STRING_2_NAME, default=current_str2)] = cv.string
+        else:
+            schema_dict[vol.Optional(CONF_STRING_2_NAME)] = cv.string
+
+        schema_dict[vol.Optional(CONF_SCAN_INTERVAL_FAST, default=current_fast)] = cv.positive_int
+        schema_dict[vol.Optional(CONF_SCAN_INTERVAL_SLOW, default=current_slow)] = cv.positive_int
+
+        return self.async_show_form(step_id="init", data_schema=vol.Schema(schema_dict))

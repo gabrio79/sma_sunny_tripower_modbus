@@ -19,12 +19,14 @@ theme: "dark"
 animation: true
 
 # ------------------------------------------------------------------------------
-# ESEMPIO 2: Tema Bianco / Chiaro (Light Mode) per Inverter 1
+# ESEMPIO 2: Tema Bianco / Chiaro (Light Mode) con Nomi Personalizzati Stringhe
 # ------------------------------------------------------------------------------
 # type: custom:sma-tripower-card
 # title: "Inverter 1 - SMA Sunny Tripower"
 # inverter: "inverter_1"
 # theme: "light"         # oppure: white_background: true
+# string_1_name: "Stringa C (Falda Sud)"
+# string_2_name: "Stringa D (Falda Ovest)"
 # animation: true
 
 # ------------------------------------------------------------------------------

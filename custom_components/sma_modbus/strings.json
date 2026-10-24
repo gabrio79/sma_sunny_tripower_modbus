@@ -9,7 +9,9 @@
           "port": "Port",
           "slave_id": "Modbus Slave Unit ID",
           "name": "Inverter Name",
-          "strings_label": "MPPT String Labels"
+          "strings_label": "MPPT String Labels",
+          "string_1_name": "String 1 Custom Name (optional)",
+          "string_2_name": "String 2 Custom Name (optional)"
         }
       }
     },
@@ -30,6 +32,8 @@
         "data": {
           "slave_id": "Modbus Slave Unit ID",
           "strings_label": "MPPT String Labels",
+          "string_1_name": "String 1 Custom Name",
+          "string_2_name": "String 2 Custom Name",
           "scan_interval_fast": "Instant Power Polling Interval (seconds)",
           "scan_interval_slow": "Yield & Status Polling Interval (seconds)"
         }
