@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+import shutil
 from typing import Final
 
 from homeassistant.config_entries import ConfigEntry
@@ -24,10 +25,37 @@ URL_CARD_PATH: Final[str] = "/sma_modbus/sma-tripower-card.js"
 LOCAL_CARD_PATH: Final[Path] = Path(__file__).parent / "frontend" / "sma-tripower-card.js"
 
 
+def _sync_prepare_frontend_files(www_dir_str: str) -> tuple[bool, Path | None]:
+    """Run blocking file I/O (exists, mkdir, read_bytes, copy2) in executor thread."""
+    if not LOCAL_CARD_PATH.exists():
+        return False, None
+
+    try:
+        www_dir = Path(www_dir_str)
+        www_dir.mkdir(parents=True, exist_ok=True)
+        target_file = www_dir / "sma-tripower-card.js"
+        if (
+            not target_file.exists()
+            or target_file.read_bytes() != LOCAL_CARD_PATH.read_bytes()
+        ):
+            shutil.copy2(str(LOCAL_CARD_PATH), str(target_file))
+            return True, target_file
+    except Exception as err:  # pylint: disable=broad-except
+        _LOGGER.debug("Could not copy card to www directory: %s", err)
+
+    return True, None
+
+
 async def _async_register_frontend(hass: HomeAssistant) -> None:
     """Register custom Lovelace card HTTP static path and resource."""
-    if not LOCAL_CARD_PATH.exists():
+    card_exists, copied_target = await hass.async_add_executor_job(
+        _sync_prepare_frontend_files, hass.config.path("www")
+    )
+    if not card_exists:
         return
+
+    if copied_target is not None:
+        _LOGGER.info("Copied sma-tripower-card.js to %s", copied_target)
 
     # 1. Register HTTP static paths (both directory and direct file URL)
     frontend_dir = LOCAL_CARD_PATH.parent
@@ -48,19 +76,7 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
         except Exception as err:
             _LOGGER.debug("Error in register_static_path: %s", err)
 
-    # 2. Automatically copy to /config/www/ so /local/sma-tripower-card.js always works out-of-the-box
-    try:
-        import shutil
-        www_dir = Path(hass.config.path("www"))
-        www_dir.mkdir(parents=True, exist_ok=True)
-        target_file = www_dir / "sma-tripower-card.js"
-        if not target_file.exists() or target_file.read_bytes() != LOCAL_CARD_PATH.read_bytes():
-            await hass.async_add_executor_job(shutil.copy2, str(LOCAL_CARD_PATH), str(target_file))
-            _LOGGER.info("Copied sma-tripower-card.js to %s", target_file)
-    except Exception as err:
-        _LOGGER.debug("Could not copy card to www directory: %s", err)
-
-    # 3. Automatically register into Lovelace resources if available
+    # 2. Automatically register into Lovelace resources if available
     try:
         lovelace = hass.data.get("lovelace")
         if lovelace and hasattr(lovelace, "resources") and lovelace.resources:

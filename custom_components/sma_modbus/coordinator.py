@@ -354,7 +354,7 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
                 # Log first successful read as visible notice in logs
                 if not self._first_data_logged and success_count > 0:
-                    _LOGGER.warning(
+                    _LOGGER.info(
                         "SMA Inverter %s connesso! Telemetria: Rete=%s W, FV1=%s W, FV2=%s W, Stato=%s, Resa Oggi=%s kWh, Totale=%s kWh, Temp=%s °C",
                         self.host,
                         data.get(KEY_GRID_POWER),
@@ -369,7 +369,7 @@ class SmaModbusCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
                 # Reset communication lost warning flag upon success
                 if self._connection_lost_logged:
-                    _LOGGER.warning(
+                    _LOGGER.info(
                         "Comunicazione ripristinata con l'inverter SMA %s:%s (slave %s)",
                         self.host,
                         self.port,

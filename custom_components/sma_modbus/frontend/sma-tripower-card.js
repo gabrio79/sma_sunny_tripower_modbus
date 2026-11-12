@@ -8,7 +8,7 @@
  * and integrated visual card editor.
  */
 
-const CARD_VERSION = '1.3.3';
+const CARD_VERSION = '1.3.4';
 console.info(
   `%c SMA-TRIPOWER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #D32F2F; font-weight: 700; border-radius: 3px 0 0 3px;',
